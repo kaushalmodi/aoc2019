@@ -8,9 +8,15 @@ let
 var
   totalFuel = 0
 
-for mass in masses:
+proc calcFuel(mass: int) =
   let
-    fuel = (mass.parseInt() / 3).int - 2
-  echo &"mass = {mass}, fuel = {fuel}"
-  totalFuel.inc(fuel)
+    fuel = (mass / 3).int - 2
+  if fuel > 0:
+    echo &"mass = {mass}, fuel = {fuel}"
+    totalFuel.inc(fuel)
+    calcFuel(fuel)
+
+for mass in masses:
+  calcFuel(mass.parseInt())
+
 echo &"totalFuel = {totalFuel}"
