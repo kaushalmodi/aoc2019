@@ -47,11 +47,13 @@ proc process(codes: seq[int]): seq[int] =
 
   echo &"Modified codes: {result}"
 
-proc state1202Alert(codes: seq[int]) =
+proc state(fileName: string, noun = -1, verb = -1) =
   var
-    codes = codes
-  codes[1] = 12
-  codes[2] = 2
+    codes = readFile(fileName).strip().split(',').mapIt(it.strip().parseInt())
+  if noun in {0 .. 99}:
+    codes[1] = noun
+  if verb in {0 .. 99}:
+    codes[2] = verb
   let
     modCodes = codes.process()
   echo &"value at position 0: {modCodes[0]}"
@@ -63,6 +65,5 @@ when isMainModule:
                  commandLineParams()[0]
                else:
                  "input.txt"
-    codes = readFile(fileName).strip().split(',').mapIt(it.strip().parseInt())
-  codes.state1202Alert()
-  # discard codes.process()
+  # state(fileName) # for testing without setting the noun and verb
+  state(fileName, 12, 2) # 1202 program alert
