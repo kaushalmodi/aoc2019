@@ -47,7 +47,7 @@ proc process(codes: seq[int]): seq[int] =
 
   echo &"Modified codes: {result}"
 
-proc state(fileName: string, noun = -1, verb = -1) =
+proc state(fileName: string, noun = -1, verb = -1): int =
   var
     codes = readFile(fileName).strip().split(',').mapIt(it.strip().parseInt())
   if noun in {0 .. 99}:
@@ -57,6 +57,7 @@ proc state(fileName: string, noun = -1, verb = -1) =
   let
     modCodes = codes.process()
   echo &"value at position 0: {modCodes[0]}"
+  return modCodes[0]
 
 when isMainModule:
   let
@@ -65,5 +66,15 @@ when isMainModule:
                  commandLineParams()[0]
                else:
                  "input.txt"
-  # state(fileName) # for testing without setting the noun and verb
-  state(fileName, 12, 2) # 1202 program alert
+  # discard state(fileName) # for testing without setting the noun and verb
+  discard state(fileName, 12, 2) # 1202 program alert
+
+  let
+    specialOutput = 19690720
+  block nvLoop:
+    for n in 0 .. 99:
+      for v in 0 .. 99:
+        if state(fileName, n, v) == specialOutput:
+          echo &"output matched with {specialOutput}!"
+          echo &"{100*n + v}"
+          break nvLoop
