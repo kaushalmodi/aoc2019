@@ -25,6 +25,9 @@ type
   Spec* = tuple
     numInputs: int
     outParamIdx: int
+  ProcessOut* = tuple
+    modCodes: seq[int]
+    output: int
 
 # opcode spec
 var
@@ -65,15 +68,15 @@ proc parseCode*(code: int): Code =
       #|---------+-----+-------------|
       result.modes[codeLen-idx-maxNumParameters] = parseInt($m).Mode
 
-proc process*(codes: seq[int]; testInput = -1; quiet = false): seq[int] =
-  result = codes
+proc process*(codes: seq[int]; testInput = -1; quiet = false): ProcessOut =
+  result = (codes, -1).ProcessOut
   var
     address = 0
     prevOpCode: OpCode
 
   while address < codes.len():
     let
-      rawCode = result[address]
+      rawCode = result.modCodes[address]
       code = rawCode.parseCode()
 
     var
@@ -87,9 +90,9 @@ proc process*(codes: seq[int]; testInput = -1; quiet = false): seq[int] =
       if numInputs > 0:
         for idx in 0 ..< numInputs:
           if code.modes[idx] == modePosition:
-            params[idx] = result[codes[address+idx+1]]
+            params[idx] = result.modCodes[codes[address+idx+1]]
           else:
-            params[idx] = result[address+idx+1]
+            params[idx] = result.modCodes[address+idx+1]
 
     when defined(debug):
       echo &"{rawCode} => code = {code}, params = {params}"
@@ -107,11 +110,12 @@ proc process*(codes: seq[int]; testInput = -1; quiet = false): seq[int] =
       else:
         params[outParamIdx] = testInput
     of opOutput:
+      result.output = params[0]
       echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       if code.modes[0] == modePosition:
-        echo &" -> Value at address {codes[address+1]} (pointed to by address {address+1}) = {params[0]}"
+        echo &" -> Value at address {codes[address+1]} (pointed to by address {address+1}) = {result.output}"
       else:
-        echo &" -> Value at address {address+1} = {params[0]}"
+        echo &" -> Value at address {address+1} = {result.output}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1]
@@ -138,7 +142,7 @@ proc process*(codes: seq[int]; testInput = -1; quiet = false): seq[int] =
       # Parameters that an instruction writes to will never be in
       # immediate mode.
       doAssert code.modes[outParamIdx] == modePosition
-      result[codes[address+outParamIdx+1]] = params[outParamIdx]
+      result.modCodes[codes[address+outParamIdx+1]] = params[outParamIdx]
       address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
     else:
       address.inc(1 + numInputs) # incr over the current opcode and input params
@@ -146,7 +150,7 @@ proc process*(codes: seq[int]; testInput = -1; quiet = false): seq[int] =
     prevOpCode = code.op
 
   when defined(debug):
-    echo &"Modified codes: {result}"
+    echo &"Modified codes: {result.modCodes}"
 
 when isMainModule:
   import std/[os, unittest]
@@ -163,13 +167,13 @@ when isMainModule:
     if verb in {0 .. 99}:
       codes[2] = verb
     let
-      modCodes = codes.process(quiet = true)
+      modCodes = codes.process(quiet = true).modCodes
     when defined(debug):
       echo &"value at position 0: {modCodes[0]}"
     return modCodes[0]
 
   if paramCount() > 0:
-    echo commandLineParams()[0].readFileToSeq().process()
+    echo commandLineParams()[0].readFileToSeq().process().modCodes
   else:
     let
       specialOutput = 19690720
@@ -184,19 +188,19 @@ when isMainModule:
     suite "day2 tests":
       test "example":
         check:
-          @[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50].process() == @[3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+          @[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50].process().modCodes == @[3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
       test "add 1":
         check:
-          @[1, 0, 0, 0, 99].process() == @[2, 0, 0, 0, 99]
+          @[1, 0, 0, 0, 99].process().modCodes == @[2, 0, 0, 0, 99]
       test "mul 1":
         check:
-          @[2, 3, 0, 3, 99].process() == @[2, 3, 0, 6, 99]
+          @[2, 3, 0, 3, 99].process().modCodes == @[2, 3, 0, 6, 99]
       test "mul 2":
         check:
-          @[2, 4, 4, 5, 99, 0].process() == @[2, 4, 4, 5, 99, 9801]
+          @[2, 4, 4, 5, 99, 0].process().modCodes == @[2, 4, 4, 5, 99, 9801]
       test "add + mul":
         check:
-          @[1, 1, 1, 4, 99, 5, 6, 0, 99].process() == @[30, 1, 1, 4, 2, 5, 6, 0, 99]
+          @[1, 1, 1, 4, 99, 5, 6, 0, 99].process().modCodes == @[30, 1, 1, 4, 2, 5, 6, 0, 99]
       test "1202 program alert":
         check:
           state(inputFile, 12, 2) == 4138658
