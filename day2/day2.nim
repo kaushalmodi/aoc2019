@@ -1,13 +1,58 @@
-import std/[os, strformat]
-when defined(debug):
-  import std/[strutils]
+import std/[os, strformat, strutils, tables]
 import days_utils
 
+const
+  maxNumParameters = 3
+  maxOpCodeLen = 2
+  maxCodeLen = maxNumParameters + maxOpCodeLen
+
 type
+  Mode = enum
+    modePosition = 0
+    modeImmediate
   OpCode = enum
     opAdd = 1
     opMul = 2
+    opInput = 3
+    opOutput = 4
     opHalt = 99
+  Code = tuple
+    op: OpCode
+    modes: array[maxNumParameters, Mode]
+  Spec = tuple
+    numInputs: int
+    outParamIdx: int
+
+var
+  spec: Table[int, Spec]
+spec[opAdd.ord] = (2, 2).Spec
+spec[opMul.ord] = (2, 2).Spec
+spec[opHalt.ord] = (0, -1).Spec
+
+proc parseCode(code: int): Code =
+  doAssert code >= 1 # opAdd
+  let
+    codeStr = $code
+    codeLen = codeStr.len
+  doAssert codeLen <= maxCodeLen
+  case codeLen
+  of 1, 2:
+    result.op = code.OpCode
+    result.modes = [modePosition, modePosition, modePosition]
+  else:
+    for idx, m in codeStr[0 ..< codeLen-maxOpCodeLen]:
+      doAssert (m in {'0', '1'})
+      #|---------+-----+-------------|
+      #| codeLen | idx | modes index |
+      #|---------+-----+-------------|
+      #|       3 |   0 | 3-0-3 = 0   |
+      #|       4 |   0 | 4-0-3 = 1   |
+      #|       4 |   1 | 4-1-3 = 0   |
+      #|       5 |   0 | 5-0-3 = 2   |
+      #|       5 |   1 | 5-1-3 = 1   |
+      #|       5 |   2 | 5-2-3 = 0   |
+      #|---------+-----+-------------|
+      result.modes[codeLen-idx-maxNumParameters] = parseInt($m).Mode
 
 proc process(codes: seq[int]): seq[int] =
   result = codes
@@ -16,22 +61,48 @@ proc process(codes: seq[int]): seq[int] =
 
   while address < codes.len():
     let
-      code = result[address].OpCode
-    case code
+      code = result[address].parseCode()
+
+    var
+      params: array[maxNumParameters, int]
+      numInputs = 0
+      outParamIdx = -1
+
+    if spec.hasKey(code.op.ord):
+      (numInputs, outParamIdx) = spec[code.op.ord]
+      if numInputs > 0:
+        for idx in 0 ..< numInputs:
+          if code.modes[idx] == modePosition:
+            params[idx] = result[codes[address+idx+1]]
+          else:
+            params[idx] = result[address+idx+1]
+
+    case code.op
     of opAdd:
       when defined(debug):
-        echo &"[{address}] Add code {code.ord} detected"
-      result[codes[address+3]] = result[codes[address+1]] + result[codes[address+2]]
-      address.inc(4) # skip operands and output pointer registers
+        echo &"[{address}] Add opcode {code.op.ord} detected"
+      params[outParamIdx] = params[0] + params[1]
     of opMul:
       when defined(debug):
-        echo &"[{address}] Mul code {code.ord} detected"
-      result[codes[address+3]] = result[codes[address+1]] * result[codes[address+2]]
-      address.inc(4) # skip operands and output pointer registers
+        echo &"[{address}] Mul opcode {code.op.ord} detected"
+      params[outParamIdx] = params[0] * params[1]
+    of opInput:
+      discard
+    of opOutput:
+      discard
     of opHalt:
       when defined(debug):
-        echo &"[{address}] Halt code {code.ord} detected, aborting .."
+        echo &"[{address}] Halt opcode {code.op.ord} detected, aborting .."
       break
+
+    if outParamIdx >= 0:
+      if code.modes[outParamIdx] == modePosition:
+        result[codes[address+outParamIdx+1]] = params[outParamIdx]
+      else:
+        result[address+outParamIdx+1] = params[outParamIdx]
+      address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
+    else:
+      address.inc(1 + numInputs) # incr over the current opcode and input params
 
   when defined(debug):
     echo &"Modified codes: {result}"
