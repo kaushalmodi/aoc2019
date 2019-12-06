@@ -1,10 +1,13 @@
-import std/[os, strutils, strformat]
+import std/[os, strformat]
+when defined(debug):
+  import std/[strutils]
 import days_utils
 
-const
-  opAdd = 1
-  opMul = 2
-  opHalt = 99
+type
+  OpCode = enum
+    opAdd = 1
+    opMul = 2
+    opHalt = 99
 
 proc process(codes: seq[int]): seq[int] =
   result = codes
@@ -13,25 +16,22 @@ proc process(codes: seq[int]): seq[int] =
 
   while address < codes.len():
     let
-      code = result[address]
+      code = result[address].OpCode
     case code
     of opAdd:
       when defined(debug):
-        echo &"[{address}] Add code {code} detected"
+        echo &"[{address}] Add code {code.ord} detected"
       result[codes[address+3]] = result[codes[address+1]] + result[codes[address+2]]
       address.inc(4) # skip operands and output pointer registers
     of opMul:
       when defined(debug):
-        echo &"[{address}] Mul code {code} detected"
+        echo &"[{address}] Mul code {code.ord} detected"
       result[codes[address+3]] = result[codes[address+1]] * result[codes[address+2]]
       address.inc(4) # skip operands and output pointer registers
     of opHalt:
       when defined(debug):
-        echo &"[{address}] Halt code {code} detected, aborting .."
+        echo &"[{address}] Halt code {code.ord} detected, aborting .."
       break
-    else:
-      echo &"[{address}] Invalid code {code} detected"
-      quit QuitFailure
 
   when defined(debug):
     echo &"Modified codes: {result}"
