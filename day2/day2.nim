@@ -1,4 +1,5 @@
 import std/[os, strutils, sequtils, strformat]
+import days_utils
 
 const
   opAdd = 1
@@ -33,7 +34,7 @@ proc process(codes: seq[int]): seq[int] =
 
 proc state(fileName: string, noun = -1, verb = -1): int =
   var
-    codes = readFile(fileName).strip().split(',').mapIt(it.strip().parseInt())
+    codes = fileName.readFileToSeq()
   if noun in {0 .. 99}:
     codes[1] = noun
   if verb in {0 .. 99}:

@@ -1,9 +1,8 @@
 import std/[strutils, strformat]
+import days_utils
 
 const
   fileName = "input.txt"
-let
-  masses = readFile(fileName).strip().splitLines()
 
 var
   totalFuel = 0
@@ -16,7 +15,7 @@ proc calcFuel(mass: int) =
     totalFuel.inc(fuel)
     calcFuel(fuel)
 
-for mass in masses:
-  calcFuel(mass.parseInt())
+for mass in fileName.readFileToSeq():
+  calcFuel(mass)
 
 echo &"totalFuel = {totalFuel}"
