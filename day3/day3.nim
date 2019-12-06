@@ -12,7 +12,7 @@ type
     x: int
     y: int
 
-proc getCoordinates(wirePath: seq[string]): seq[Coord] =
+proc getCoordinates(wirePath: seq[string]; existingCoords: seq[Coord] = @[]): seq[Coord] =
   var
     turtle: Coord = (0, 0)
 
@@ -24,35 +24,32 @@ proc getCoordinates(wirePath: seq[string]): seq[Coord] =
     case dir
     of dirRight:
       for i in turtle.x+1 .. turtle.x+dist:
-        result.add((i, turtle.y).Coord)
+        if existingCoords.len == 0 or (i, turtle.y) in existingCoords:
+          result.add((i, turtle.y).Coord)
       turtle.x.inc(dist)
     of dirLeft:
       for i in countdown(turtle.x-1, turtle.x-dist):
-        result.add((i, turtle.y).Coord)
+        if existingCoords.len == 0 or (i, turtle.y) in existingCoords:
+          result.add((i, turtle.y).Coord)
       turtle.x.dec(dist)
     of dirUp:
       for i in turtle.y+1 .. turtle.y+dist:
-        result.add((turtle.x, i).Coord)
+        if existingCoords.len == 0 or (turtle.x, i) in existingCoords:
+          result.add((turtle.x, i).Coord)
       turtle.y.inc(dist)
     of dirDown:
       for i in countdown(turtle.y-1, turtle.y-dist):
-        result.add((turtle.x, i).Coord)
+        if existingCoords.len == 0 or (turtle.x, i) in existingCoords:
+          result.add((turtle.x, i).Coord)
       turtle.y.dec(dist)
+
 
 proc manhattanDistance(wires: seq[string]): int =
   doAssert wires.len == 2
+
   let
     firstWireCoords = wires[0].split(',').getCoordinates()
-    secondWireCoords = wires[1].split(',').getCoordinates()
-  # echo firstWireCoords
-  # echo secondWireCoords
-
-  var
-    intersectionCoords: seq[Coord]
-  for c1 in firstWireCoords:
-    for c2 in secondWireCoords:
-      if c1 == c2:
-        intersectionCoords.add(c1)
+    intersectionCoords = wires[1].split(',').getCoordinates(firstWireCoords)
 
   # echo intersectionCoords
   for i in intersectionCoords:
