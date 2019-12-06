@@ -25,6 +25,7 @@ proc updateMap(wirePath: seq[string]; map: var CoordTable) =
   var
     turtle: Coord = (0, 0)
     localMap: CoordTable
+    steps = 0
 
   for point in wirePath:
     let
@@ -36,13 +37,16 @@ proc updateMap(wirePath: seq[string]; map: var CoordTable) =
       of dirLeft: turtle.x.dec
       of dirUp: turtle.y.inc
       of dirDown: turtle.y.dec
+      steps.inc
+
       if not localMap.hasKey(turtle) and map.hasKey(turtle):
         # Increment the count only if the same wire did not intersect
         # itself.
         map[turtle].hits.inc
+        map[turtle].steps.inc(steps)
       else:
-        map[turtle] = (1, 0).MapVal
-      localMap[turtle] = (1, 0).MapVal
+        map[turtle] = (1, steps).MapVal
+      localMap[turtle] = (1, steps).MapVal
 
 proc getMin(wires: seq[string]): MinStuff =
   doAssert wires.len == 2
@@ -67,6 +71,8 @@ proc getMin(wires: seq[string]): MinStuff =
         echo &"distance for {k} = {dist}"
       if result.minDist == 0 or dist < result.minDist:
         result.minDist = dist
+      if result.minSteps == 0 or v.steps < result.minSteps:
+        result.minSteps = v.steps
   when defined(debug):
     echo intersectMap
 
@@ -83,22 +89,22 @@ when isMainModule:
                     @["R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51",
                       "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7"]]
 
-    test "part 1 example 1":
+    test "example 1":
       check:
-        getMin(pathSets[0]).minDist == 6
-    test "part 1 example 2":
+        getMin(pathSets[0]) == (6, 30)
+    test "example 2":
       check:
-        getMin(pathSets[1]).minDist == 159
-    test "part 1 example 3":
+        getMin(pathSets[1]) == (159, 610)
+    test "example 3":
       check:
-        getMin(pathSets[2]).minDist == 135
+        getMin(pathSets[2]) == (135, 410)
 
-  suite "day3 challenges":
+  suite "day3 challenge":
     setup:
       let
         inputFile = currentSourcePath.parentDir() / "input.txt"
         inputPathSet = inputFile.readFile().strip().splitLines()
 
-    test "part1":
+    test "check":
       check:
-        inputPathSet.getMin().minDist == 709
+        inputPathSet.getMin() == (709, 13836)
