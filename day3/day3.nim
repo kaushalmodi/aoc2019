@@ -20,29 +20,14 @@ proc getCoordinates(wirePath: seq[string]; existingCoords: seq[Coord] = @[]): se
     let
       dir = point[0].Direction
       dist = point[1 .. point.high].parseInt()
-    # echo &"{dir} {dist}"
-    case dir
-    of dirRight:
-      for i in turtle.x+1 .. turtle.x+dist:
-        if existingCoords.len == 0 or (i, turtle.y) in existingCoords:
-          result.add((i, turtle.y).Coord)
-      turtle.x.inc(dist)
-    of dirLeft:
-      for i in countdown(turtle.x-1, turtle.x-dist):
-        if existingCoords.len == 0 or (i, turtle.y) in existingCoords:
-          result.add((i, turtle.y).Coord)
-      turtle.x.dec(dist)
-    of dirUp:
-      for i in turtle.y+1 .. turtle.y+dist:
-        if existingCoords.len == 0 or (turtle.x, i) in existingCoords:
-          result.add((turtle.x, i).Coord)
-      turtle.y.inc(dist)
-    of dirDown:
-      for i in countdown(turtle.y-1, turtle.y-dist):
-        if existingCoords.len == 0 or (turtle.x, i) in existingCoords:
-          result.add((turtle.x, i).Coord)
-      turtle.y.dec(dist)
-
+    for i in 1 .. dist:
+      case dir
+      of dirRight: turtle.x.inc
+      of dirLeft: turtle.x.dec
+      of dirUp: turtle.y.inc
+      of dirDown: turtle.y.dec
+      if existingCoords.len == 0 or turtle in existingCoords:
+        result.add(turtle)
 
 proc manhattanDistance(wires: seq[string]): int =
   doAssert wires.len == 2
