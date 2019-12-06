@@ -1,6 +1,4 @@
-import std/[strutils, tables]
-when defined(debug) or isMainModule:
-  import std/[strformat]
+import std/[strformat, strutils, tables]
 
 const
   maxNumParameters* = 3
@@ -30,6 +28,8 @@ var
 spec[opAdd.ord] = (2, 2).Spec
 spec[opMul.ord] = (2, 2).Spec
 spec[opHalt.ord] = (0, -1).Spec
+spec[opInput.ord] = (0, 0).Spec
+spec[opOutput.ord] = (1, -1).Spec
 
 proc parseCode*(code: int): Code =
   doAssert code >= 1 # opAdd
@@ -57,10 +57,11 @@ proc parseCode*(code: int): Code =
       #|---------+-----+-------------|
       result.modes[codeLen-idx-maxNumParameters] = parseInt($m).Mode
 
-proc process*(codes: seq[int]): seq[int] =
+proc process*(codes: seq[int]; testInput = -1; quiet = false): seq[int] =
   result = codes
   var
     address = 0
+    prevOpCode: OpCode
 
   while address < codes.len():
     let
@@ -83,33 +84,37 @@ proc process*(codes: seq[int]): seq[int] =
 
     when defined(debug):
       echo &"{rawCode} => code = {code}, params = {params}"
+      echo &"[{address}] Instruction {code.op.ord} ({code.op}) detected"
 
     case code.op
     of opAdd:
-      when defined(debug):
-        echo &"[{address}] Add opcode {code.op.ord} detected"
       params[outParamIdx] = params[0] + params[1]
     of opMul:
-      when defined(debug):
-        echo &"[{address}] Mul opcode {code.op.ord} detected"
       params[outParamIdx] = params[0] * params[1]
     of opInput:
-      discard
+      if testInput < 0:
+        stdout.write "User Input? "
+        params[outParamIdx] = stdin.readLine().parseInt()
+      else:
+        params[outParamIdx] = testInput
     of opOutput:
-      discard
+      echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
+      echo &" -> Value at address {address+1} = {params[0]}"
     of opHalt:
-      when defined(debug):
-        echo &"[{address}] Halt opcode {code.op.ord} detected, aborting .."
+      if not quiet:
+        echo &"[{address}] Quitting .."
       break
 
     if outParamIdx >= 0:
-      if code.modes[outParamIdx] == modePosition:
-        result[codes[address+outParamIdx+1]] = params[outParamIdx]
-      else:
-        result[address+outParamIdx+1] = params[outParamIdx]
+      # Parameters that an instruction writes to will never be in
+      # immediate mode.
+      doAssert code.modes[outParamIdx] == modePosition
+      result[codes[address+outParamIdx+1]] = params[outParamIdx]
       address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
     else:
       address.inc(1 + numInputs) # incr over the current opcode and input params
+
+    prevOpCode = code.op
 
   when defined(debug):
     echo &"Modified codes: {result}"
@@ -129,7 +134,7 @@ when isMainModule:
     if verb in {0 .. 99}:
       codes[2] = verb
     let
-      modCodes = codes.process()
+      modCodes = codes.process(quiet = true)
     when defined(debug):
       echo &"value at position 0: {modCodes[0]}"
     return modCodes[0]
