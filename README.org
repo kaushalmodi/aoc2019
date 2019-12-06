@@ -1,0 +1,13 @@
+#+title: Advent of Code 2019 in Nim
+
+* To install Nim
+Visit [[http://kmodi.pages.gitlab.analog.com/v2/downloading-nim/][my blog post]] on how to download and extract Nim distribution at
+ADI.
+* Run code for all days
+#+begin_example
+nim days
+#+end_example
+* Run code for all one or more specified days
+#+begin_example
+nim days 1 2
+#+end_example

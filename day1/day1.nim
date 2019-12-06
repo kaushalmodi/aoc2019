@@ -1,21 +1,19 @@
-import std/[strutils, strformat]
+import std/[os, strutils, strformat]
 import days_utils
 
-const
-  fileName = "input.txt"
-
-var
-  totalFuel = 0
-
-proc calcFuel(mass: int) =
+proc calcFuel(mass: int; totalFuel: var int) =
   let
     fuel = (mass / 3).int - 2
   if fuel > 0:
-    echo &"mass = {mass}, fuel = {fuel}"
+    when defined(debug):
+      echo &"mass = {mass}, fuel = {fuel}"
     totalFuel.inc(fuel)
-    calcFuel(fuel)
+    calcFuel(fuel, totalFuel)
 
-for mass in fileName.readFileToSeq():
-  calcFuel(mass)
-
-echo &"totalFuel = {totalFuel}"
+when isMainModule:
+  var
+    totalFuel = 0
+  for mass in readFileToSeq(currentSourcePath.parentDir() / "input.txt"):
+    calcFuel(mass, totalFuel)
+  echo &"totalFuel = {totalFuel}"
+  doAssert totalFuel == 5146132
