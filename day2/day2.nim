@@ -5,45 +5,29 @@ const
   opMul = 2
   opHalt = 99
 
-proc availCheck(address: int; codes: seq[int]) =
-  if codes.len()-1 < address+3:
-    echo &"Unable to access address {address+3}, aborting .."
-    quit QuitFailure
-
-proc update(skipAddrs: var seq[int]; address: int) =
-  for i in 1 .. 3:
-    skipAddrs.add(address + i)
-  echo &"Skipped addresses: {skipAddrs}"
-
 proc process(codes: seq[int]): seq[int] =
   result = codes
   var
     address = 0
-    skipAddrs: seq[int]
 
-  for code in codes:
-    if address in skipAddrs:
-      echo &"[{address}] Skipping this .."
-      address.inc()
-      continue
-
+  while address < codes.len():
+    let
+      code = codes[address]
     case code
     of opAdd:
       echo &"[{address}] Add code {code} detected"
-      address.availCheck(codes)
       result[codes[address+3]] = result[codes[address+1]] + result[codes[address+2]]
-      skipAddrs.update(address)
+      address.inc(4) # skip operands and output pointer registers
     of opMul:
       echo &"[{address}] Mul code {code} detected"
-      address.availCheck(codes)
       result[codes[address+3]] = result[codes[address+1]] * result[codes[address+2]]
-      skipAddrs.update(address)
+      address.inc(4) # skip operands and output pointer registers
     of opHalt:
       echo &"[{address}] Halt code {code} detected, aborting .."
       break
     else:
-      echo &"[{address}] code {code} detected"
-    address.inc()
+      echo &"[{address}] Invalid code {code} detected"
+      quit QuitFailure
 
   echo &"Modified codes: {result}"
 
