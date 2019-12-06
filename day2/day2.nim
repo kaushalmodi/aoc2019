@@ -1,35 +1,37 @@
-import std/[os, strformat, strutils, tables]
-import days_utils
+import std/[strutils, tables]
+when defined(debug) or isMainModule:
+  import std/[strformat]
 
 const
-  maxNumParameters = 3
-  maxOpCodeLen = 2
-  maxCodeLen = maxNumParameters + maxOpCodeLen
+  maxNumParameters* = 3
+  maxOpCodeLen* = 2
+  maxCodeLen* = maxNumParameters + maxOpCodeLen
 
 type
-  Mode = enum
+  Mode* = enum
     modePosition = 0
     modeImmediate
-  OpCode = enum
+  OpCode* = enum
     opAdd = 1
     opMul = 2
     opInput = 3
     opOutput = 4
     opHalt = 99
-  Code = tuple
+  Code* = tuple
     op: OpCode
     modes: array[maxNumParameters, Mode]
-  Spec = tuple
+  Spec* = tuple
     numInputs: int
     outParamIdx: int
 
+# opcode spec
 var
   spec: Table[int, Spec]
 spec[opAdd.ord] = (2, 2).Spec
 spec[opMul.ord] = (2, 2).Spec
 spec[opHalt.ord] = (0, -1).Spec
 
-proc parseCode(code: int): Code =
+proc parseCode*(code: int): Code =
   doAssert code >= 1 # opAdd
   let
     codeStr = $code
@@ -40,6 +42,7 @@ proc parseCode(code: int): Code =
     result.op = code.OpCode
     result.modes = [modePosition, modePosition, modePosition]
   else:
+    result.op = codeStr[codeLen-2 .. codeLen-1].parseInt().OpCode
     for idx, m in codeStr[0 ..< codeLen-maxOpCodeLen]:
       doAssert (m in {'0', '1'})
       #|---------+-----+-------------|
@@ -54,14 +57,15 @@ proc parseCode(code: int): Code =
       #|---------+-----+-------------|
       result.modes[codeLen-idx-maxNumParameters] = parseInt($m).Mode
 
-proc process(codes: seq[int]): seq[int] =
+proc process*(codes: seq[int]): seq[int] =
   result = codes
   var
     address = 0
 
   while address < codes.len():
     let
-      code = result[address].parseCode()
+      rawCode = result[address]
+      code = rawCode.parseCode()
 
     var
       params: array[maxNumParameters, int]
@@ -76,6 +80,9 @@ proc process(codes: seq[int]): seq[int] =
             params[idx] = result[codes[address+idx+1]]
           else:
             params[idx] = result[address+idx+1]
+
+    when defined(debug):
+      echo &"{rawCode} => code = {code}, params = {params}"
 
     case code.op
     of opAdd:
@@ -107,24 +114,25 @@ proc process(codes: seq[int]): seq[int] =
   when defined(debug):
     echo &"Modified codes: {result}"
 
-proc state(fileName: string, noun = -1, verb = -1): int =
-  var
-    codes = fileName.readFileToSeq()
-  if noun in {0 .. 99}:
-    codes[1] = noun
-  if verb in {0 .. 99}:
-    codes[2] = verb
-  let
-    modCodes = codes.process()
-  when defined(debug):
-    echo &"value at position 0: {modCodes[0]}"
-  return modCodes[0]
-
 when isMainModule:
-  import std/[unittest]
+  import std/[os, unittest]
+  import days_utils
 
   const
     inputFile = currentSourcePath.parentDir() / "input.txt"
+
+  proc state(fileName: string, noun = -1, verb = -1): int =
+    var
+      codes = fileName.readFileToSeq()
+    if noun in {0 .. 99}:
+      codes[1] = noun
+    if verb in {0 .. 99}:
+      codes[2] = verb
+    let
+      modCodes = codes.process()
+    when defined(debug):
+      echo &"value at position 0: {modCodes[0]}"
+    return modCodes[0]
 
   if paramCount() > 0:
     echo commandLineParams()[0].readFileToSeq().process()

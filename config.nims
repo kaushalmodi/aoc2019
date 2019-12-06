@@ -1,6 +1,7 @@
 import std/[os, strutils, strformat]
 
 switch("path", "./utils/")
+switch("path", "./day2/") # IntCode
 
 task days, "Run code for a specified day, or all days":
   let
