@@ -13,7 +13,7 @@ proc process(codes: seq[int]): seq[int] =
 
   while address < codes.len():
     let
-      code = codes[address]
+      code = result[address]
     case code
     of opAdd:
       echo &"[{address}] Add code {code} detected"
