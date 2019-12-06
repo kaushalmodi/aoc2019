@@ -1,4 +1,6 @@
-import std/[os, strutils]
+import std/[os, strutils, tables]
+when defined(debug):
+  import std/[strformat]
 
 type
   Direction = enum
@@ -11,10 +13,12 @@ type
   Coord = tuple
     x: int
     y: int
+  CoordTable = Table[Coord, int]
 
-proc getCoordinates(wirePath: seq[string]; existingCoords: seq[Coord] = @[]): seq[Coord] =
+proc getCoordinates(wirePath: seq[string]; map: var CoordTable) =
   var
     turtle: Coord = (0, 0)
+    localMap: CoordTable
 
   for point in wirePath:
     let
@@ -26,22 +30,39 @@ proc getCoordinates(wirePath: seq[string]; existingCoords: seq[Coord] = @[]): se
       of dirLeft: turtle.x.dec
       of dirUp: turtle.y.inc
       of dirDown: turtle.y.dec
-      if existingCoords.len == 0 or turtle in existingCoords:
-        result.add(turtle)
+      if not localMap.hasKey(turtle) and map.hasKey(turtle):
+        # Increment the count only if the same wire did not intersect
+        # itself.
+        map[turtle].inc
+      else:
+        map[turtle] = 1
+      localMap[turtle] = 1
 
 proc manhattanDistance(wires: seq[string]): int =
   doAssert wires.len == 2
 
-  let
-    firstWireCoords = wires[0].split(',').getCoordinates()
-    intersectionCoords = wires[1].split(',').getCoordinates(firstWireCoords)
+  var
+    map: CoordTable
+  when defined(debug):
+    var
+      intersectMap: CoordTable
 
-  # echo intersectionCoords
-  for i in intersectionCoords:
-    let
-      dist = abs(i.x) + abs(i.y)
-    if result == 0 or dist < result:
-      result = dist
+  for wire in wires:
+    wire.split(',').getCoordinates(map)
+    # echo map
+
+  for k, v in map.pairs:
+    if v > 1:
+      when defined(debug):
+        intersectMap[k] = v
+      let
+        dist = abs(k.x) + abs(k.y)
+      when defined(debug):
+        echo &"distance for {k} = {dist}"
+      if result == 0 or dist < result:
+        result = dist
+  when defined(debug):
+    echo intersectMap
 
 when isMainModule:
   import std/[unittest]
@@ -60,6 +81,11 @@ when isMainModule:
         manhattanDistance(@["R98,U47,R26,D63,R33,U87,L62,D20,R33,U53,R51",
                             "U98,R91,D20,R16,D67,R40,U7,R15,U6,R7"]) == 135
 
-  const
-    inputFile = currentSourcePath.parentDir() / "input.txt"
-  doAssert inputFile.readFile().strip().splitLines().manhattanDistance() == 709
+  suite "day2 part1":
+    setup:
+      const
+        inputFile = currentSourcePath.parentDir() / "input.txt"
+
+    test "part 1":
+      check:
+        inputFile.readFile().strip().splitLines().manhattanDistance() == 709
