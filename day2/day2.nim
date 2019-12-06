@@ -14,6 +14,10 @@ type
     opMul = 2
     opInput = 3
     opOutput = 4
+    opJumpIfTrue = 5
+    opJumpIfFalse = 6
+    opLessThan = 7
+    opEquals = 8
     opHalt = 99
   Code* = tuple
     op: OpCode
@@ -30,6 +34,10 @@ spec[opMul.ord] = (2, 2).Spec
 spec[opHalt.ord] = (0, -1).Spec
 spec[opInput.ord] = (0, 0).Spec
 spec[opOutput.ord] = (1, -1).Spec
+spec[opJumpIfTrue.ord] = (2, -1).Spec
+spec[opJumpIfFalse.ord] = (2, -1).Spec
+spec[opLessThan.ord] = (2, 2).Spec
+spec[opEquals.ord] = (2, 2).Spec
 
 proc parseCode*(code: int): Code =
   doAssert code >= 1 # opAdd
@@ -72,6 +80,7 @@ proc process*(codes: seq[int]; testInput = -1; quiet = false): seq[int] =
       params: array[maxNumParameters, int]
       numInputs = 0
       outParamIdx = -1
+      jumpAddress = -1
 
     if spec.hasKey(code.op.ord):
       (numInputs, outParamIdx) = spec[code.op.ord]
@@ -99,13 +108,33 @@ proc process*(codes: seq[int]; testInput = -1; quiet = false): seq[int] =
         params[outParamIdx] = testInput
     of opOutput:
       echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
-      echo &" -> Value at address {address+1} = {params[0]}"
+      if code.modes[0] == modePosition:
+        echo &" -> Value at address {codes[address+1]} (pointed to by address {address+1}) = {params[0]}"
+      else:
+        echo &" -> Value at address {address+1} = {params[0]}"
+    of opJumpIfTrue:
+      if params[0] != 0:
+        jumpAddress = params[1]
+    of opJumpIfFalse:
+      if params[0] == 0:
+        jumpAddress = params[1]
+    of opLessThan:
+      params[outParamIdx] = 0
+      if params[0] < params[1]:
+        params[outParamIdx] = 1
+    of opEquals:
+      params[outParamIdx] = 0
+      if params[0] == params[1]:
+        params[outParamIdx] = 1
     of opHalt:
       if not quiet:
         echo &"[{address}] Quitting .."
       break
 
-    if outParamIdx >= 0:
+    if code.op in {opJumpIfTrue, opJumpIfFalse} and jumpAddress >= 0:
+      doAssert jumpAddress != address # do not keep on jumping to the current address
+      address = jumpAddress
+    elif outParamIdx >= 0:
       # Parameters that an instruction writes to will never be in
       # immediate mode.
       doAssert code.modes[outParamIdx] == modePosition
