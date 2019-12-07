@@ -38,7 +38,7 @@ proc getHighestSignal(feedbackLoop = false): int =
           for p5 in phaseSet-{p1}-{p2}-{p3}-{p4}:
             echo &"Attempt {cnt} ::"
             output = ampControllerSw.ampSeries([p1.int, p2.int, p3.int, p4.int, p5.int])
-            echo &"{p1} {p2} {p3} {p4} {p5} .. {output} [max: {result}]"
+            echo &"{p1} {p2} {p3} {p4} {p5} => {output} [max: {result}]"
             echo ""
             if output > result:
               result = output

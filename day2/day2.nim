@@ -73,8 +73,10 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
   var
     codes = codes # Make the input codes mutable
     address = initialAddress
-    prevOpCode: OpCode
     inputIdx = -1
+  when defined(debug):
+    var
+      prevOpCode: OpCode
 
   while address < codes.len():
     let
@@ -118,7 +120,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
         if inputIdx < inputs.high:
           inputIdx.inc
           params[outParamIdx] = inputs[inputIdx]
-          echo &"Received input {params[outParamIdx]}"
+          echo &"-> {params[outParamIdx]}"
         else:
           # If the input queue is empty, return.  The saved state of
           # the current address (instruction pointer) and the modified
@@ -126,11 +128,12 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
           return
     of opOutput:
       result.output = params[0]
-      echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
+      when defined(debug):
+        echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       if code.modes[0] == modePosition:
-        echo &" -> Value at address {codes[address+1]} (pointed to by address {address+1}) = {result.output}"
+        echo &"   .. codes[{address+1}] -> codes[{codes[address+1]}] => {result.output}"
       else:
-        echo &" -> Value at address {address+1} = {result.output}"
+        echo &"   .. codes[{address+1}] => {result.output}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1]
@@ -167,7 +170,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
     result.address = address
     when defined(debug):
       echo &".. next address = {address}"
-    prevOpCode = code.op
+      prevOpCode = code.op
 
     result.codes = codes
 
