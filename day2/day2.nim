@@ -68,11 +68,12 @@ proc parseCode*(code: int): Code =
       #|---------+-----+-------------|
       result.modes[codeLen-idx-maxNumParameters] = parseInt($m).Mode
 
-proc process*(codes: seq[int]; testInput = -1; quiet = false): ProcessOut =
+proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOut =
   result = (codes, -1).ProcessOut
   var
     address = 0
     prevOpCode: OpCode
+    inputIdx = 0
 
   while address < codes.len():
     let
@@ -104,11 +105,12 @@ proc process*(codes: seq[int]; testInput = -1; quiet = false): ProcessOut =
     of opMul:
       params[outParamIdx] = params[0] * params[1]
     of opInput:
-      if testInput < 0:
+      if inputs.len == 0:
         stdout.write "User Input? "
         params[outParamIdx] = stdin.readLine().parseInt()
       else:
-        params[outParamIdx] = testInput
+        params[outParamIdx] = inputs[inputIdx]
+        inputIdx.inc
     of opOutput:
       result.output = params[0]
       echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
