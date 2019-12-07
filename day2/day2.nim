@@ -95,14 +95,12 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       outParamIdx = -1
       jumpAddress = -1
 
-    if spec.hasKey(opCodeStr):
-      (numInputs, outParamIdx) = spec[opCodeStr]
-      if numInputs > 0:
-        for idx in 0 ..< numInputs:
-          if code.modes[idx] == modePosition:
-            params[idx] = codes[codes[address+idx+1]]
-          else:
-            params[idx] = codes[address+idx+1]
+    (numInputs, outParamIdx) = spec[opCodeStr]
+    for idx in 0 ..< numInputs:
+      if code.modes[idx] == modePosition:
+        params[idx] = codes[codes[address+idx+1]] # indirect
+      else:
+        params[idx] = codes[address+idx+1]        # direct
 
     when defined(debug):
       echo &"{rawCode} => code = {code}, params = {params}"
