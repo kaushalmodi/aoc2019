@@ -70,15 +70,15 @@ proc parseCode*(code: int): Code =
       result.modes[codeLen-idx-maxNumParameters] = parseInt($m).Mode
 
 proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
-  result.modCodes = codes
   var
+    codes = codes # Make the input codes mutable
     address = initialAddress
     prevOpCode: OpCode
     inputIdx = -1
 
   while address < codes.len():
     let
-      rawCode = result.modCodes[address]
+      rawCode = codes[address]
       code = rawCode.parseCode()
       opCodeStr = $code.op
 
@@ -98,9 +98,9 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       if numInputs > 0:
         for idx in 0 ..< numInputs:
           if code.modes[idx] == modePosition:
-            params[idx] = result.modCodes[result.modCodes[address+idx+1]]
+            params[idx] = codes[codes[address+idx+1]]
           else:
-            params[idx] = result.modCodes[address+idx+1]
+            params[idx] = codes[address+idx+1]
 
     when defined(debug):
       echo &"{rawCode} => code = {code}, params = {params}"
@@ -128,7 +128,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       result.output = params[0]
       echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       if code.modes[0] == modePosition:
-        echo &" -> Value at address {result.modCodes[address+1]} (pointed to by address {address+1}) = {result.output}"
+        echo &" -> Value at address {codes[address+1]} (pointed to by address {address+1}) = {result.output}"
       else:
         echo &" -> Value at address {address+1} = {result.output}"
     of opJumpIfTrue:
@@ -149,7 +149,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       if not quiet:
         echo &"[{address}] Quitting .."
       when defined(debug):
-        echo &"Modified codes: {result.modCodes}"
+        echo &"Modified codes: {codes}"
       result.address = -1
       return
 
@@ -160,7 +160,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       # Parameters that an instruction writes to will never be in
       # immediate mode.
       doAssert code.modes[outParamIdx] == modePosition
-      result.modCodes[result.modCodes[address+outParamIdx+1]] = params[outParamIdx]
+      codes[codes[address+outParamIdx+1]] = params[outParamIdx]
       address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
     else:
       address.inc(1 + numInputs) # incr over the current opcode and input params
@@ -168,6 +168,8 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
     when defined(debug):
       echo &".. next address = {address}"
     prevOpCode = code.op
+
+    result.modCodes = codes
 
 when isMainModule:
   import std/[os, unittest]
