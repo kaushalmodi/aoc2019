@@ -1,20 +1,11 @@
 import std/[strutils, critbits]
+when defined(debug):
+  import std/[strformat]
 
 type
   Map = CritBitTree[string]
 
-proc getNumOrbits(map: Map; light: string; numOrbits: var int) =
-  numOrbits.inc
-  if map[light] == "COM":
-    return
-  else:
-    getNumOrbits(map, map[light], numOrbits)
-
-proc getNumOrbits(uob: seq[string]): int =
-  ## Calculate the total number of direct and indirect
-  ## orbits from the Universal Orbital Map (uob).
-  var
-    map: Map
+proc genMap(uob: seq[string]): Map =
   for orbit in uob:
     let
       elems = orbit.split(')')
@@ -24,11 +15,27 @@ proc getNumOrbits(uob: seq[string]): int =
       echo &"{light} orbits around {heavy}"
     # A light body can orbit only around one heavy object. So the map
     # must contain only one light -> heavy mapping.
-    doAssert not map.contains(light)
-    map[light] = heavy
+    doAssert not result.contains(light)
+    result[light] = heavy
   when defined(debug):
-    echo map
+    echo result
 
+proc getNumOrbits(map: Map; light: string; numOrbits: var int) =
+  numOrbits.inc
+  when defined(debug):
+    stdout.write &"{light}, "
+  if map[light] == "COM":
+    when defined(debug):
+      echo "COM"
+    return
+  else:
+    getNumOrbits(map, map[light], numOrbits)
+
+proc getNumOrbits(uob: seq[string]): int =
+  ## Calculate the total number of direct and indirect
+  ## orbits from the Universal Orbital Map (uob).
+  let
+    map = uob.genMap()
   for light in map.keys:
     var
       numOrbits: int
@@ -41,8 +48,8 @@ when isMainModule:
   suite "day6 tests":
     setup:
       let
-        uob = "example.txt".readFile().strip().splitLines()
-    test "check":
+        uob = "example1.txt".readFile().strip().splitLines()
+    test "example 1":
       check:
         uob.getNumOrbits() == 42
 
