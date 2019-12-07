@@ -80,7 +80,7 @@ when isMainModule:
 
     test "check":
       check:
-        "input.txt".readFileToSeq().process(inputs = @[idAirConditionerUnit]).output == 10987514
+        "input.txt".readFileToIntSeq().process(inputs = @[idAirConditionerUnit]).output == 10987514
 
   suite "day5 part2 challenge":
     setup:
@@ -89,4 +89,4 @@ when isMainModule:
 
     test "check":
       check:
-        "input.txt".readFileToSeq().process(inputs = @[idThermalRadiatorController]).output == 14195011
+        "input.txt".readFileToIntSeq().process(inputs = @[idThermalRadiatorController]).output == 14195011

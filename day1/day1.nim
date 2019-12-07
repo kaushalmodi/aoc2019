@@ -13,7 +13,7 @@ proc calcFuel(mass: int; totalFuel: var int) =
 when isMainModule:
   var
     totalFuel = 0
-  for mass in "input.txt".readFileToSeq():
+  for mass in "input.txt".readFileToIntSeq():
     calcFuel(mass, totalFuel)
   echo &"totalFuel = {totalFuel}"
   doAssert totalFuel == 5146132

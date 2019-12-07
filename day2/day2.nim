@@ -175,7 +175,7 @@ when isMainModule:
 
   proc state(fileName: string, noun = -1, verb = -1): int =
     var
-      codes = fileName.readFileToSeq()
+      codes = fileName.readFileToIntSeq()
     if noun in {0 .. 99}:
       codes[1] = noun
     if verb in {0 .. 99}:
@@ -187,7 +187,7 @@ when isMainModule:
     return modCodes[0]
 
   if paramCount() > 0:
-    echo commandLineParams()[0].readFileToSeq().process().modCodes
+    echo commandLineParams()[0].readFileToIntSeq().process().modCodes
   else:
     let
       specialOutput = 19690720

@@ -101,10 +101,6 @@ when isMainModule:
         getMin(pathSets[2]) == (135, 410)
 
   suite "day3 challenge":
-    setup:
-      let
-        inputPathSet = "input.txt".prjDir().readFile().strip().splitLines()
-
     test "check":
       check:
-        inputPathSet.getMin() == (709, 13836)
+        "input.txt".readFileToStrSeq().getMin() == (709, 13836)

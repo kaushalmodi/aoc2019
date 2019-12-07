@@ -5,7 +5,7 @@ proc prjDir*(fileName: string): string =
     pDir = getProjectPath()
   result = pDir / fileName
 
-proc readFileToSeq*(fileName: string): seq[int] =
+proc readFileToIntSeq*(fileName: string): seq[int] =
   ## Read a file into a sequence of ints.
   let
     str = fileName.prjDir().readFile().strip()
@@ -13,3 +13,7 @@ proc readFileToSeq*(fileName: string): seq[int] =
     result = str.split(',').mapIt(it.strip().parseInt())
   else:
     result = str.splitLines().mapIt(it.strip().parseInt())
+
+proc readFileToStrSeq*(fileName: string): seq[string] =
+  ## Read a file into a sequence of strings.
+  result = fileName.prjDir().readFile().strip().splitLines()

@@ -69,23 +69,18 @@ when isMainModule:
   import days_utils
 
   suite "day6 tests":
-    setup:
-      let
-        uob1 = "example1.txt".prjDir().readFile().strip().splitLines()
-        uob2 = "example2.txt".prjDir().readFile().strip().splitLines()
-
     test "example 1":
       check:
-        uob1.getNumOrbits() == 42
+        "example1.txt".readFileToStrSeq().getNumOrbits() == 42
 
     test "example 2":
       check:
-        uob2.minOrbitalTransfers() == 4
+        "example2.txt".readFileToStrSeq().minOrbitalTransfers() == 4
 
   suite "day6 challenge":
     setup:
       let
-        uob = "input.txt".prjDir().readFile().strip().splitLines()
+        uob = "input.txt".readFileToStrSeq()
     test "check":
       check:
         uob.getNumOrbits() == 158090

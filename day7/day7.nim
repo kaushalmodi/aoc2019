@@ -2,7 +2,7 @@ import std/[strformat, sequtils]
 import days_utils, day2 # intcode
 
 const
-  ampControllerSw = "input.txt".readFileToSeq()
+  ampControllerSw = "input.txt".readFileToIntSeq()
   numAmps = 5
 
 proc ampSeries(sw: seq[int], phaseInputs: array[numAmps, int]): int =
