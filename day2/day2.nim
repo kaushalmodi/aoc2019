@@ -26,6 +26,7 @@ type
     numInputs: int
     outParamIdx: int
   ProcessOut* = tuple
+    address: int
     modCodes: seq[int]
     outputs: seq[int]
 
@@ -68,12 +69,12 @@ proc parseCode*(code: int): Code =
       #|---------+-----+-------------|
       result.modes[codeLen-idx-maxNumParameters] = parseInt($m).Mode
 
-proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOut =
-  result = (codes, @[]).ProcessOut
+proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
+  result.modCodes = codes
   var
-    address = 0
+    address = initialAddress
     prevOpCode: OpCode
-    inputIdx = 0
+    inputIdx = -1
 
   while address < codes.len():
     let
@@ -82,8 +83,6 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOu
       opCodeStr = $code.op
 
     when defined(debug):
-      echo &"Modified codes: {result.modCodes[0 .. 20]} .."
-      echo ""
       echo &"[{address}] Instruction {code.op.ord} ({code.op}) detected"
     # Valid opcode check
     doAssert not opCodeStr.contains("(invalid data!)")
@@ -116,10 +115,15 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOu
         stdout.write "User Input? "
         params[outParamIdx] = stdin.readLine().parseInt()
       else:
-        params[outParamIdx] = inputs[inputIdx]
         if inputIdx < inputs.high:
           inputIdx.inc
-      echo &"Received input {params[outParamIdx]}"
+          params[outParamIdx] = inputs[inputIdx]
+          echo &"Received input {params[outParamIdx]}"
+        else:
+          # If the input queue is empty, return.  The saved state of
+          # the current address (instruction pointer) and the modified
+          # code are part of the returned data for future restore.
+          return
     of opOutput:
       result.outputs.add(params[0])
       echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
@@ -144,7 +148,10 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOu
     of opHalt:
       if not quiet:
         echo &"[{address}] Quitting .."
-      break
+      when defined(debug):
+        echo &"Modified codes: {result.modCodes}"
+      result.address = -1
+      return
 
     if code.op in {opJumpIfTrue, opJumpIfFalse} and jumpAddress >= 0:
       doAssert jumpAddress != address # do not keep on jumping to the current address
@@ -157,13 +164,10 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOu
       address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
     else:
       address.inc(1 + numInputs) # incr over the current opcode and input params
+    result.address = address
     when defined(debug):
       echo &".. next address = {address}"
-
     prevOpCode = code.op
-
-  when defined(debug):
-    echo &"Modified codes: {result.modCodes}"
 
 when isMainModule:
   import std/[os, unittest]
