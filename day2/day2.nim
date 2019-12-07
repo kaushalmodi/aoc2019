@@ -31,17 +31,17 @@ type
     output: int
 
 # opcode spec
-var
-  spec: Table[int, Spec]
-spec[opAdd.ord] = (2, 2).Spec
-spec[opMul.ord] = (2, 2).Spec
-spec[opHalt.ord] = (0, -1).Spec
-spec[opInput.ord] = (0, 0).Spec
-spec[opOutput.ord] = (1, -1).Spec
-spec[opJumpIfTrue.ord] = (2, -1).Spec
-spec[opJumpIfFalse.ord] = (2, -1).Spec
-spec[opLessThan.ord] = (2, 2).Spec
-spec[opEquals.ord] = (2, 2).Spec
+let
+  spec: Table[string, Spec] =
+    { $opAdd         : (numInputs: 2, outParamIdx: 2),
+      $opMul         : (numInputs: 2, outParamIdx: 2),
+      $opHalt        : (numInputs: 0, outParamIdx: -1),
+      $opInput       : (numInputs: 0, outParamIdx: 0),
+      $opOutput      : (numInputs: 1, outParamIdx: -1),
+      $opJumpIfTrue  : (numInputs: 2, outParamIdx: -1),
+      $opJumpIfFalse : (numInputs: 2, outParamIdx: -1),
+      $opLessThan    : (numInputs: 2, outParamIdx: 2),
+      $opEquals      : (numInputs: 2, outParamIdx: 2) }.toTable
 
 proc parseCode*(code: int): Code =
   doAssert code >= 1 # opAdd
@@ -83,7 +83,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       opCodeStr = $code.op
 
     when defined(debug):
-      echo &"[{address}] Instruction {code.op.ord} ({code.op}) detected"
+      echo &"[{address}] Instruction {opCodeStr} ({code.op}) detected"
     # Valid opcode check
     doAssert not opCodeStr.contains("(invalid data!)")
 
@@ -93,8 +93,8 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       outParamIdx = -1
       jumpAddress = -1
 
-    if spec.hasKey(code.op.ord):
-      (numInputs, outParamIdx) = spec[code.op.ord]
+    if spec.hasKey(opCodeStr):
+      (numInputs, outParamIdx) = spec[opCodeStr]
       if numInputs > 0:
         for idx in 0 ..< numInputs:
           if code.modes[idx] == modePosition:
