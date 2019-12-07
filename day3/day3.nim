@@ -1,4 +1,4 @@
-import std/[os, strutils, tables]
+import std/[strutils, tables]
 when defined(debug):
   import std/[strformat]
 
@@ -78,6 +78,7 @@ proc getMin(wires: seq[string]): MinStuff =
 
 when isMainModule:
   import std/[unittest]
+  import days_utils
 
   suite "day3 tests":
     setup:
@@ -102,8 +103,7 @@ when isMainModule:
   suite "day3 challenge":
     setup:
       let
-        inputFile = currentSourcePath.parentDir() / "input.txt"
-        inputPathSet = inputFile.readFile().strip().splitLines()
+        inputPathSet = "input.txt".prjDir().readFile().strip().splitLines()
 
     test "check":
       check:

@@ -173,9 +173,6 @@ when isMainModule:
   import std/[os, unittest]
   import days_utils
 
-  const
-    inputFile = currentSourcePath.parentDir() / "input.txt"
-
   proc state(fileName: string, noun = -1, verb = -1): int =
     var
       codes = fileName.readFileToSeq()
@@ -197,7 +194,7 @@ when isMainModule:
     block nvLoop:
       for n in 0 .. 99:
         for v in 0 .. 99:
-          if state(inputFile, n, v) == specialOutput:
+          if state("input.txt", n, v) == specialOutput:
             echo &"output matched with {specialOutput}!"
             echo &"{100*n + v}"
             break nvLoop
@@ -220,4 +217,4 @@ when isMainModule:
           @[1, 1, 1, 4, 99, 5, 6, 0, 99].process().modCodes == @[30, 1, 1, 4, 2, 5, 6, 0, 99]
       test "1202 program alert":
         check:
-          state(inputFile, 12, 2) == 4138658
+          state("input.txt", 12, 2) == 4138658

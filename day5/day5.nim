@@ -1,13 +1,10 @@
 import day2 # intcode
 
 when isMainModule:
-  import std/[os, unittest, random]
+  import std/[unittest, random]
   import days_utils
 
   randomize()
-
-  const
-    inputFile = currentSourcePath.parentDir() / "input.txt"
 
   suite "day5 tests":
     setup:
@@ -83,7 +80,7 @@ when isMainModule:
 
     test "check":
       check:
-        inputFile.readFileToSeq().process(inputs = @[idAirConditionerUnit]).output == 10987514
+        "input.txt".readFileToSeq().process(inputs = @[idAirConditionerUnit]).output == 10987514
 
   suite "day5 part2 challenge":
     setup:
@@ -92,4 +89,4 @@ when isMainModule:
 
     test "check":
       check:
-        inputFile.readFileToSeq().process(inputs = @[idThermalRadiatorController]).output == 14195011
+        "input.txt".readFileToSeq().process(inputs = @[idThermalRadiatorController]).output == 14195011

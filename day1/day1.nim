@@ -1,4 +1,4 @@
-import std/[os, strutils, strformat]
+import std/[strutils, strformat]
 import days_utils
 
 proc calcFuel(mass: int; totalFuel: var int) =
@@ -13,7 +13,7 @@ proc calcFuel(mass: int; totalFuel: var int) =
 when isMainModule:
   var
     totalFuel = 0
-  for mass in readFileToSeq(currentSourcePath.parentDir() / "input.txt"):
+  for mass in "input.txt".readFileToSeq():
     calcFuel(mass, totalFuel)
   echo &"totalFuel = {totalFuel}"
   doAssert totalFuel == 5146132
