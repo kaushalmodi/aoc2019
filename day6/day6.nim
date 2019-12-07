@@ -65,13 +65,19 @@ proc minOrbitalTransfers(uob: seq[string]; fromOrbit = "YOU", toOrbit = "SAN"): 
         return o1.dist + o2.dist
 
 when isMainModule:
-  import std/[unittest]
+  import std/[os, unittest]
+
+  const
+    here = currentSourcePath.parentDir()
+    ex1 = here / "example1.txt"
+    ex2 = here / "example2.txt"
+    inputFile = here / "input.txt"
 
   suite "day6 tests":
     setup:
       let
-        uob1 = "example1.txt".readFile().strip().splitLines()
-        uob2 = "example2.txt".readFile().strip().splitLines()
+        uob1 = ex1.readFile().strip().splitLines()
+        uob2 = ex2.readFile().strip().splitLines()
 
     test "example 1":
       check:
@@ -84,7 +90,7 @@ when isMainModule:
   suite "day6 challenge":
     setup:
       let
-        uob = "input.txt".readFile().strip().splitLines()
+        uob = inputFile.readFile().strip().splitLines()
     test "check":
       check:
         uob.getNumOrbits() == 158090
