@@ -1,5 +1,7 @@
 #+title: Day 6: Universal Orbit Map
 
+https://adventofcode.com/2019/day/6
+
 * Part 1
 You've landed at the Universal Orbit Map facility on Mercury. Because
 navigation in space often involves transferring between orbits, the
