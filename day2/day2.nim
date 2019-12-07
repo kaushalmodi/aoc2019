@@ -28,7 +28,7 @@ type
   ProcessOut* = tuple
     address: int
     modCodes: seq[int]
-    outputs: seq[int]
+    output: int
 
 # opcode spec
 var
@@ -125,12 +125,12 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
           # code are part of the returned data for future restore.
           return
     of opOutput:
-      result.outputs.add(params[0])
+      result.output = params[0]
       echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       if code.modes[0] == modePosition:
-        echo &" -> Value at address {result.modCodes[address+1]} (pointed to by address {address+1}) = {params[0]}"
+        echo &" -> Value at address {result.modCodes[address+1]} (pointed to by address {address+1}) = {result.output}"
       else:
-        echo &" -> Value at address {address+1} = {params[0]}"
+        echo &" -> Value at address {address+1} = {result.output}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1]

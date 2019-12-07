@@ -35,46 +35,46 @@ when isMainModule:
 
     test "position mode, check if input is == 8":
       check:
-        inp1.process(inputs = @[7]).outputs[^1] == 0
-        inp1.process(inputs = @[8]).outputs[^1] == 1
-        inp1.process(inputs = @[9]).outputs[^1] == 0
+        inp1.process(inputs = @[7]).output == 0
+        inp1.process(inputs = @[8]).output == 1
+        inp1.process(inputs = @[9]).output == 0
 
     test "position mode, check if input is < 8":
       check:
-        inp2.process(inputs = @[7]).outputs[^1] == 1
-        inp2.process(inputs = @[8]).outputs[^1] == 0
-        inp2.process(inputs = @[9]).outputs[^1] == 0
+        inp2.process(inputs = @[7]).output == 1
+        inp2.process(inputs = @[8]).output == 0
+        inp2.process(inputs = @[9]).output == 0
 
     test "immediate mode, check if input is == 8":
       check:
-        inp3.process(inputs = @[7]).outputs[^1] == 0
-        inp3.process(inputs = @[8]).outputs[^1] == 1
-        inp3.process(inputs = @[9]).outputs[^1] == 0
+        inp3.process(inputs = @[7]).output == 0
+        inp3.process(inputs = @[8]).output == 1
+        inp3.process(inputs = @[9]).output == 0
 
     test "immediate mode, check if input is < 8":
       check:
-        inp4.process(inputs = @[7]).outputs[^1] == 1
-        inp4.process(inputs = @[8]).outputs[^1] == 0
-        inp4.process(inputs = @[9]).outputs[^1] == 0
+        inp4.process(inputs = @[7]).output == 1
+        inp4.process(inputs = @[8]).output == 0
+        inp4.process(inputs = @[9]).output == 0
 
     test "position mode, jump test":
       check:
-        inp5.process(inputs = @[0]).outputs[^1] == 0
-        inp5.process(inputs = @[100]).outputs[^1] == 1
+        inp5.process(inputs = @[0]).output == 0
+        inp5.process(inputs = @[100]).output == 1
 
     test "immediate mode, jump test":
       check:
-        inp6.process(inputs = @[0]).outputs[^1] == 0
-        inp6.process(inputs = @[999]).outputs[^1] == 1
+        inp6.process(inputs = @[0]).output == 0
+        inp6.process(inputs = @[999]).output == 1
 
     test "a more complex test":
       check:
         # output 999 for input < 8
-        inp7.process(inputs = @[7]).outputs[^1] == 999
+        inp7.process(inputs = @[7]).output == 999
         # output 1000 for input < 8
-        inp7.process(inputs = @[8]).outputs[^1] == 1000
+        inp7.process(inputs = @[8]).output == 1000
         # output 1001 for input > 8
-        inp7.process(inputs = @[9]).outputs[^1] == 1001
+        inp7.process(inputs = @[9]).output == 1001
 
   suite "day5 part1 challenge":
     setup:
@@ -83,7 +83,7 @@ when isMainModule:
 
     test "check":
       check:
-        inputFile.readFileToSeq().process(inputs = @[idAirConditionerUnit]).outputs[^1] == 10987514
+        inputFile.readFileToSeq().process(inputs = @[idAirConditionerUnit]).output == 10987514
 
   suite "day5 part2 challenge":
     setup:
@@ -92,4 +92,4 @@ when isMainModule:
 
     test "check":
       check:
-        inputFile.readFileToSeq().process(inputs = @[idThermalRadiatorController]).outputs[^1] == 14195011
+        inputFile.readFileToSeq().process(inputs = @[idThermalRadiatorController]).output == 14195011
