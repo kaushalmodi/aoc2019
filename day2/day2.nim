@@ -79,6 +79,14 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOu
     let
       rawCode = result.modCodes[address]
       code = rawCode.parseCode()
+      opCodeStr = $code.op
+
+    when defined(debug):
+      echo &"Modified codes: {result.modCodes[0 .. 20]} .."
+      echo ""
+      echo &"[{address}] Instruction {code.op.ord} ({code.op}) detected"
+    # Valid opcode check
+    doAssert not opCodeStr.contains("(invalid data!)")
 
     var
       params: array[maxNumParameters, int]
@@ -91,13 +99,12 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOu
       if numInputs > 0:
         for idx in 0 ..< numInputs:
           if code.modes[idx] == modePosition:
-            params[idx] = result.modCodes[codes[address+idx+1]]
+            params[idx] = result.modCodes[result.modCodes[address+idx+1]]
           else:
             params[idx] = result.modCodes[address+idx+1]
 
     when defined(debug):
       echo &"{rawCode} => code = {code}, params = {params}"
-      echo &"[{address}] Instruction {code.op.ord} ({code.op}) detected"
 
     case code.op
     of opAdd:
@@ -111,11 +118,12 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOu
       else:
         params[outParamIdx] = inputs[inputIdx]
         inputIdx.inc
+      echo &"Received input {params[outParamIdx]}"
     of opOutput:
       result.output = params[0]
       echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       if code.modes[0] == modePosition:
-        echo &" -> Value at address {codes[address+1]} (pointed to by address {address+1}) = {result.output}"
+        echo &" -> Value at address {result.modCodes[address+1]} (pointed to by address {address+1}) = {result.output}"
       else:
         echo &" -> Value at address {address+1} = {result.output}"
     of opJumpIfTrue:
@@ -144,10 +152,12 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOu
       # Parameters that an instruction writes to will never be in
       # immediate mode.
       doAssert code.modes[outParamIdx] == modePosition
-      result.modCodes[codes[address+outParamIdx+1]] = params[outParamIdx]
+      result.modCodes[result.modCodes[address+outParamIdx+1]] = params[outParamIdx]
       address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
     else:
       address.inc(1 + numInputs) # incr over the current opcode and input params
+    when defined(debug):
+      echo &".. next address = {address}"
 
     prevOpCode = code.op
 
