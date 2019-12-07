@@ -27,7 +27,7 @@ type
     outParamIdx: int
   ProcessOut* = tuple
     modCodes: seq[int]
-    output: int
+    outputs: seq[int]
 
 # opcode spec
 var
@@ -69,7 +69,7 @@ proc parseCode*(code: int): Code =
       result.modes[codeLen-idx-maxNumParameters] = parseInt($m).Mode
 
 proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOut =
-  result = (codes, -1).ProcessOut
+  result = (codes, @[]).ProcessOut
   var
     address = 0
     prevOpCode: OpCode
@@ -117,15 +117,16 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; quiet = false): ProcessOu
         params[outParamIdx] = stdin.readLine().parseInt()
       else:
         params[outParamIdx] = inputs[inputIdx]
-        inputIdx.inc
+        if inputIdx < inputs.high:
+          inputIdx.inc
       echo &"Received input {params[outParamIdx]}"
     of opOutput:
-      result.output = params[0]
+      result.outputs.add(params[0])
       echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       if code.modes[0] == modePosition:
-        echo &" -> Value at address {result.modCodes[address+1]} (pointed to by address {address+1}) = {result.output}"
+        echo &" -> Value at address {result.modCodes[address+1]} (pointed to by address {address+1}) = {params[0]}"
       else:
-        echo &" -> Value at address {address+1} = {result.output}"
+        echo &" -> Value at address {address+1} = {params[0]}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1]
