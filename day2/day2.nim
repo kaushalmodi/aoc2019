@@ -27,7 +27,7 @@ type
     outParamIdx: int
   ProcessOut* = tuple
     address: int
-    modCodes: seq[int]
+    codes: seq[int]
     output: int
 
 # opcode spec
@@ -169,7 +169,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       echo &".. next address = {address}"
     prevOpCode = code.op
 
-    result.modCodes = codes
+    result.codes = codes
 
 when isMainModule:
   import std/[os, unittest]
@@ -182,14 +182,13 @@ when isMainModule:
       codes[1] = noun
     if verb in {0 .. 99}:
       codes[2] = verb
-    let
-      modCodes = codes.process(quiet = true).modCodes
+    codes = codes.process(quiet = true).codes
     when defined(debug):
-      echo &"value at position 0: {modCodes[0]}"
-    return modCodes[0]
+      echo &"value at position 0: {codes[0]}"
+    return codes[0]
 
   if paramCount() > 0:
-    echo commandLineParams()[0].readFileToIntSeq().process().modCodes
+    echo commandLineParams()[0].readFileToIntSeq().process().codes
   else:
     let
       specialOutput = 19690720
@@ -204,19 +203,19 @@ when isMainModule:
     suite "day2 tests":
       test "example":
         check:
-          @[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50].process().modCodes == @[3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
+          @[1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50].process().codes == @[3500, 9, 10, 70, 2, 3, 11, 0, 99, 30, 40, 50]
       test "add 1":
         check:
-          @[1, 0, 0, 0, 99].process().modCodes == @[2, 0, 0, 0, 99]
+          @[1, 0, 0, 0, 99].process().codes == @[2, 0, 0, 0, 99]
       test "mul 1":
         check:
-          @[2, 3, 0, 3, 99].process().modCodes == @[2, 3, 0, 6, 99]
+          @[2, 3, 0, 3, 99].process().codes == @[2, 3, 0, 6, 99]
       test "mul 2":
         check:
-          @[2, 4, 4, 5, 99, 0].process().modCodes == @[2, 4, 4, 5, 99, 9801]
+          @[2, 4, 4, 5, 99, 0].process().codes == @[2, 4, 4, 5, 99, 9801]
       test "add + mul":
         check:
-          @[1, 1, 1, 4, 99, 5, 6, 0, 99].process().modCodes == @[30, 1, 1, 4, 2, 5, 6, 0, 99]
+          @[1, 1, 1, 4, 99, 5, 6, 0, 99].process().codes == @[30, 1, 1, 4, 2, 5, 6, 0, 99]
       test "1202 program alert":
         check:
           state("input.txt", 12, 2) == 4138658

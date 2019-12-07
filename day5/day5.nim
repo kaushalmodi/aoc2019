@@ -24,11 +24,11 @@ when isMainModule:
 
     test "parameter mode test":
       check:
-        @[1002, 4, 3, 4, 33].process().modCodes == @[1002, 4, 3, 4, 99]
+        @[1002, 4, 3, 4, 33].process().codes == @[1002, 4, 3, 4, 99]
 
     test "input/output test":
       check:
-        @[3, 0, 4, 0, 99].process(inputs = @[randVal]).modCodes == @[randVal, 0, 4, 0, 99]
+        @[3, 0, 4, 0, 99].process(inputs = @[randVal]).codes == @[randVal, 0, 4, 0, 99]
 
     test "position mode, check if input is == 8":
       check:

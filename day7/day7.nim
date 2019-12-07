@@ -16,10 +16,10 @@ proc ampSeries(sw: seq[int], phaseInputs: array[numAmps, int]): int =
       # address==-1 in the returned state means that that amp's
       # intcode process saw the 99 opcode and it's now in Halt state.
       break
-    state[0] = state[0].modCodes.process(@[state[^1].output], state[0].address)
+    state[0] = state[0].codes.process(@[state[^1].output], state[0].address)
     #                                      ^^^^^^^^ feedback from last stage of amp
     for i in 1 ..< numAmps:
-      state[i] = state[i].modCodes.process(@[state[i-1].output], state[i].address)
+      state[i] = state[i].codes.process(@[state[i-1].output], state[i].address)
   result = state[^1].output
 
 proc getHighestSignal(feedbackLoop = false): int =
