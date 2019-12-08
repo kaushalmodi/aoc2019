@@ -2,6 +2,9 @@
 
 https://adventofcode.com/2019/day/
 
+*Complete copyright of this puzzle belongs to [[https://twitter.com/ericwastl][Eric Wastl]] aka
+[[https://www.reddit.com/u/topaz2078/][/u/topaz2078]].*
+
 * Part 1
 
 * Part 2

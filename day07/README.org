@@ -2,6 +2,9 @@
 
 https://adventofcode.com/2019/day/7
 
+*Complete copyright of this puzzle belongs to [[https://twitter.com/ericwastl][Eric Wastl]] aka
+[[https://www.reddit.com/u/topaz2078/][/u/topaz2078]].*
+
 * Part 1
 Based on the navigational maps, you're going to need to send more
 power to your ship's thrusters to reach Santa in time. To do this,

@@ -2,6 +2,9 @@
 
 https://adventofcode.com/2019/day/5
 
+*Complete copyright of this puzzle belongs to [[https://twitter.com/ericwastl][Eric Wastl]] aka
+[[https://www.reddit.com/u/topaz2078/][/u/topaz2078]].*
+
 * Part 1
 You're starting to sweat as the ship makes its way toward Mercury. The
 Elves suggest that you get the air conditioner working by upgrading
