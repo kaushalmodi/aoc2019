@@ -1,4 +1,4 @@
-import day2 # intcode
+import day02 # intcode
 
 when isMainModule:
   import std/[unittest, random]

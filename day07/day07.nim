@@ -1,5 +1,5 @@
 import std/[strformat, sequtils]
-import days_utils, day2 # intcode
+import days_utils, day02 # intcode
 
 const
   ampControllerSw = "input.txt".readFileToIntSeq()
