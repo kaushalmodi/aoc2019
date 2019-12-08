@@ -4,19 +4,22 @@ when defined(debug):
   import std/[strformat]
 
 type
-  DigitCounts = Table[char, int]
+  Pixel = enum
+    pBlack = '0'
+    pWhite = '1'
+    pTrans = '2'
+  PixelCounts = Table[Pixel, int]
   Layer = object
     content: string
-    num: int
-    digitCounts: DigitCounts
+    pixelCounts: PixelCounts
   Image = object
     layers: seq[string]
     width: int
     height: int
 
-proc analyze(layer: string; digits: set[char]): DigitCounts =
-  for digit in digits:
-    result[digit] = layer.count(digit)
+proc analyze(layer: string; pixels: set[Pixel]): PixelCounts =
+  for pixel in pixels:
+    result[pixel] = layer.count(pixel.char)
 
 proc layerize(pixels: string; width, height: int): Image =
   result.width = width
@@ -36,29 +39,56 @@ proc getLeastZeroesLayer(image: Image): Layer =
     leastZeroesLayer: Layer
   for i, layer in image.layers:
     let
-      digitCounts = layer.analyze({'0', '1', '2'})
+      pixelCounts = layer.analyze({pBlack, pWhite, pTrans})
     when defined(debug):
-      echo &"layer {i}: {digitCounts}"
+      echo &"layer {i}: {pixelCounts}"
     if i == 0 or
-       not digitCounts.hasKey('0') or
-       digitCounts['0'] < leastZeroesLayer.digitCounts['0']:
+       not pixelCounts.hasKey(pBlack) or
+       pixelCounts[pBlack] < leastZeroesLayer.pixelCounts[pBlack]:
       leastZeroesLayer = Layer(content: layer,
-                               num: i,
-                               digitCounts: digitCounts)
+                               pixelCounts: pixelCounts)
   return leastZeroesLayer
+
+proc render(image: Image): Layer =
+  result.content = newString(image.width*image.height)
+  # assert result.content[0] == '\0'
+  for layer in image.layers:
+    if result.content[0] == '\0':
+      result.content = layer
+    else:
+      for i, digit in result.content:
+        case digit.Pixel
+        of pTrans: result.content[i] = layer[i]
+        else: discard
+
+  # Display the image
+  for i in 0 ..< image.height:
+    let
+      line = result.content[i*image.width ..< (i+1)*image.width]
+    for digit in line:
+      if digit == '0': stdout.write("  ")
+      else: stdout.write("\u2591\u2591")
+    echo ""
 
 when isMainModule:
   import std/[unittest]
 
-  suite "day8 part1 challenge":
+  suite "day8 challenge":
     setup:
       let
-        layer = "input.txt".prjDir().readFile().strip().layerize(25, 6).getLeastZeroesLayer()
+        layers = "input.txt".prjDir().readFile().strip().layerize(25, 6)
+        leastZeroesLayer = layers.getLeastZeroesLayer()
 
-    test "check":
+    test "part1":
       check:
-        layer.digitCounts['1'] * layer.digitCounts['2'] == 1742
+        leastZeroesLayer.pixelCounts[pWhite] * leastZeroesLayer.pixelCounts[pTrans] == 1742
 
-  # suite "day8 part2 challenge":
-  #   test "check":
-  #     check:
+    test "part2":
+      check:
+        layers.render().content ==
+        "0110000110100011111001100" &
+          "1001000010100011000010010" &
+          "1000000010010101110010010" &
+          "1011000010001001000011110" &
+          "1001010010001001000010010" &
+          "0111001100001001111010010"
