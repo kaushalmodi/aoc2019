@@ -8,18 +8,13 @@ type
     pBlack = '0'
     pWhite = '1'
     pTrans = '2'
-  PixelCounts = Table[Pixel, int]
   Layer = object
     content: string
-    pixelCounts: PixelCounts
+    pixelCounts: Table[Pixel, int]
   Image = object
     layers: seq[string]
     width: int
     height: int
-
-proc analyze(layer: string; pixels: set[Pixel]): PixelCounts =
-  for pixel in pixels:
-    result[pixel] = layer.count(pixel.char)
 
 proc layerize(pixels: string; width, height: int): Image =
   result.width = width
@@ -30,41 +25,32 @@ proc layerize(pixels: string; width, height: int): Image =
     numLayers = numPixels div layerSize
 
   for i in 0 ..< numLayers:
-    let
-      layer = pixels[i*layerSize ..< (i+1)*layerSize]
-    result.layers.add(layer)
+    result.layers.add(pixels[i*layerSize ..< (i+1)*layerSize])
 
 proc getLeastZeroesLayer(image: Image): Layer =
-  var
-    leastZeroesLayer: Layer
   for i, layer in image.layers:
-    let
-      pixelCounts = layer.analyze({pBlack, pWhite, pTrans})
+    var
+      pixelCounts: Table[Pixel, int]
+    for pixel in {pBlack, pWhite, pTrans}:
+      pixelCounts[pixel] = layer.count(pixel.char)
     when defined(debug):
       echo &"layer {i}: {pixelCounts}"
     if i == 0 or
        not pixelCounts.hasKey(pBlack) or
-       pixelCounts[pBlack] < leastZeroesLayer.pixelCounts[pBlack]:
-      leastZeroesLayer = Layer(content: layer,
-                               pixelCounts: pixelCounts)
-  return leastZeroesLayer
+       pixelCounts[pBlack] < result.pixelCounts[pBlack]:
+      result = Layer(content: layer, pixelCounts: pixelCounts)
 
-proc render(image: Image): Layer =
-  result.content = newString(image.width*image.height)
-  # assert result.content[0] == '\0'
-  for layer in image.layers:
-    if result.content[0] == '\0':
-      result.content = layer
-    else:
-      for i, digit in result.content:
-        case digit.Pixel
-        of pTrans: result.content[i] = layer[i]
-        else: discard
+proc render(image: Image): string =
+  result = image.layers[0]
+  for layer in image.layers[1 .. ^1]:
+    for i, digit in result:
+      if digit.Pixel == pTrans:
+        result[i] = layer[i]
 
   # Display the image
-  for i in 0 ..< image.height:
+  for row in 0 ..< image.height:
     let
-      line = result.content[i*image.width ..< (i+1)*image.width]
+      line = result[row*image.width ..< (row+1)*image.width]
     for digit in line:
       if digit == '0': stdout.write("  ")
       else: stdout.write("\u2591\u2591")
@@ -77,15 +63,15 @@ when isMainModule:
     setup:
       let
         layers = "input.txt".prjDir().readFile().strip().layerize(25, 6)
-        leastZeroesLayer = layers.getLeastZeroesLayer()
 
     test "part1":
       check:
-        leastZeroesLayer.pixelCounts[pWhite] * leastZeroesLayer.pixelCounts[pTrans] == 1742
+        layers.getLeastZeroesLayer().pixelCounts[pWhite] *
+        layers.getLeastZeroesLayer().pixelCounts[pTrans] == 1742
 
     test "part2":
       check:
-        layers.render().content ==
+        layers.render() ==
         "0110000110100011111001100" &
           "1001000010100011000010010" &
           "1000000010010101110010010" &
