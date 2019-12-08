@@ -1,4 +1,4 @@
-import std/[strformat, sequtils]
+import std/[strformat]
 import days_utils, day02 # intcode
 
 const
