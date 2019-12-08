@@ -9,22 +9,33 @@ type
     content: string
     num: int
     digitCounts: DigitCounts
+  Image = object
+    layers: seq[string]
+    width: int
+    height: int
 
 proc analyze(layer: string; digits: set[char]): DigitCounts =
   for digit in digits:
     result[digit] = layer.count(digit)
 
-proc getLeastZeroesLayer(pixels: string; width, height: int): Layer =
+proc layerize(pixels: string; width, height: int): Image =
+  result.width = width
+  result.height = height
   let
     numPixels = pixels.len
     layerSize = width * height
     numLayers = numPixels div layerSize
 
-  var
-    leastZeroesLayer: Layer
   for i in 0 ..< numLayers:
     let
       layer = pixels[i*layerSize ..< (i+1)*layerSize]
+    result.layers.add(layer)
+
+proc getLeastZeroesLayer(image: Image): Layer =
+  var
+    leastZeroesLayer: Layer
+  for i, layer in image.layers:
+    let
       digitCounts = layer.analyze({'0', '1', '2'})
     when defined(debug):
       echo &"layer {i}: {digitCounts}"
@@ -42,7 +53,7 @@ when isMainModule:
   suite "day8 part1 challenge":
     setup:
       let
-        layer = "input.txt".prjDir().readFile().strip().getLeastZeroesLayer(25, 6)
+        layer = "input.txt".prjDir().readFile().strip().layerize(25, 6).getLeastZeroesLayer()
 
     test "check":
       check:
