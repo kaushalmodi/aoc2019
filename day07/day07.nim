@@ -7,7 +7,7 @@ const
 
 proc ampSeries(sw: seq[int], phaseInputs: array[numAmps, int]): int =
   var
-    state: array[numAmps, ProcessOut]
+    state: array[numAmps, ProcessOut[int]]
   state[0] = sw.process(@[phaseInputs[0].int, 0])
   for i in 1 ..< numAmps:
     state[i] = sw.process(@[phaseInputs[i].int, state[i-1].output])

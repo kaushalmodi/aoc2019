@@ -201,7 +201,7 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
     elif outParamIdx >= 0:
       # Parameters that an instruction writes to will never be in
       # immediate mode.
-      doAssert code.modes[outParamIdx] == modePosition
+      doAssert code.modes[outParamIdx] in {modePosition, modeRelative}
       memory[memory[address+outParamIdx+1].int] = params[outParamIdx]
       address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
     else:
