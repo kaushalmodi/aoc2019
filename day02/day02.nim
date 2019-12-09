@@ -27,10 +27,10 @@ type
   Spec* = tuple
     numInputs: int
     outParamIdx: int
-  ProcessOut*[T] = tuple
+  ProcessOut* = tuple
     address: int
-    codes: seq[T]
-    output: T
+    codes: seq[int]
+    output: int
 
 # opcode spec
 let
@@ -75,7 +75,7 @@ proc parseCode*(code: int): Code =
       #|---------+-----+-------------|
       result.modes[codeLen-idx-maxNumParameters] = mode
 
-proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut[SomeInteger] =
+proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
   var
     memory: Table[int, SomeInteger]
     address = initialAddress
@@ -103,7 +103,7 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
     doAssert not opCodeStr.contains("(invalid data!)")
 
     var
-      params: array[maxNumParameters, SomeInteger]
+      params: array[maxNumParameters, int]
       numInputs = 0
       outParamIdx = -1
       jumpAddress = -1
@@ -169,10 +169,10 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
         echo &"   .. memory[{address+1}] -> memory[{addr2}] => {result.output}"
     of opJumpIfTrue:
       if params[0] != 0:
-        jumpAddress = params[1].int
+        jumpAddress = params[1]
     of opJumpIfFalse:
       if params[0] == 0:
-        jumpAddress = params[1].int
+        jumpAddress = params[1]
     of opLessThan:
       params[outParamIdx] = 0
       if params[0] < params[1]:
@@ -182,7 +182,7 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
       if params[0] == params[1]:
         params[outParamIdx] = 1
     of opAdjRelBase:
-      relativeBase = relativeBase + params[0].int
+      relativeBase = relativeBase + params[0]
       when defined(debug):
         echo &"[{address}] Relative base = {relativeBase}"
     of opHalt:
