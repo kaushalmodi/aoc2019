@@ -77,7 +77,7 @@ proc parseCode*(code: int): Code =
 
 proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
   var
-    memory: Table[int, SomeInteger]
+    memory: Table[int, int]
     address = initialAddress
     maxAddress = codes.len
     relativeBase = 0
@@ -93,7 +93,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
 
   while true:
     let
-      rawCode = memory[address].int
+      rawCode = memory[address]
       code = rawCode.parseCode()
       opCodeStr = $code.op
 
@@ -125,8 +125,8 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
         if defined(debug):
           echo &"addr2 = {addr2}"
         doAssert addr2 >= 0
-        maxAddress = max(maxAddress, addr2.int)
-        params[idx] = memory.getOrDefault(addr2.int)
+        maxAddress = max(maxAddress, addr2)
+        params[idx] = memory.getOrDefault(addr2)
 
     when defined(debug):
       echo &"{rawCode} => code = {code}, params = {params}"
@@ -159,13 +159,13 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       case code.modes[0]
       of modePosition:
         let
-          addr2 = memory[address+1].int
+          addr2 = memory[address+1]
         echo &"   .. memory[{address+1}] -> memory[{addr2}] => {result.output}"
       of modeImmediate:
         echo &"   .. memory[{address+1}] => {result.output}"
       of modeRelative:
         let
-          addr2 = relativeBase+memory[address+1].int
+          addr2 = relativeBase+memory[address+1]
         echo &"   .. memory[{address+1}] -> memory[{addr2}] => {result.output}"
     of opJumpIfTrue:
       if params[0] != 0:
@@ -205,11 +205,11 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
         addr2: int
       case code.modes[outParamIdx]
       of modePosition:
-        addr2 = memory[address+outParamIdx+1].int
+        addr2 = memory[address+outParamIdx+1]
         when defined(debug):
           echo &"==> memory[{address+outParamIdx+1}] -> memory[{addr2}] = {params[outParamIdx]}"
       of modeRelative:
-        addr2 = relativeBase+memory[address+outParamIdx+1].int
+        addr2 = relativeBase+memory[address+outParamIdx+1]
         when defined(debug):
           echo &"==> memory[{address+outParamIdx+1}] -> memory[{relativeBase}+{addr2-relativeBase}] = {params[outParamIdx]}"
       of modeImmediate:
