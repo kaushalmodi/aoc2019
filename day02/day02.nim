@@ -28,7 +28,7 @@ type
     numInputs: int
     outParamIdx: int
   ProcessOut*[T] = tuple
-    address: T
+    address: int
     codes: seq[T]
     output: T
 
@@ -46,7 +46,7 @@ let
       $opAdjRelBase  : (numInputs: 1, outParamIdx: -1),
       $opHalt        : (numInputs: 0, outParamIdx: -1) }.toTable
 
-proc parseCode*(code: SomeInteger): Code =
+proc parseCode*(code: int): Code =
   doAssert code >= 1 # opAdd
   let
     codeStr = $code
@@ -93,7 +93,7 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
 
   while true:
     let
-      rawCode = memory[address]
+      rawCode = memory[address].int
       code = rawCode.parseCode()
       opCodeStr = $code.op
 
