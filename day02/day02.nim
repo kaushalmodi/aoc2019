@@ -10,20 +10,20 @@ const
 
 type
   Mode* = enum
-    modePosition = 0
-    modeImmediate
-    modeRelative
+    modePosition = (0, "pos")
+    modeImmediate = "imm"
+    modeRelative = "rel"
   OpCode* = enum
-    opAdd = 1
-    opMul = 2
-    opInput = 3
-    opOutput = 4
-    opJumpIfTrue = 5
-    opJumpIfFalse = 6
-    opLessThan = 7
-    opEquals = 8
-    opAdjRelBase = 9
-    opHalt = 99
+    opAdd = (1, "ADD")
+    opMul = (2, "MUL")
+    opInput = (3, "INP")
+    opOutput = (4, "OUTP")
+    opJumpIfTrue = (5, "JIT")
+    opJumpIfFalse = (6, "JIF")
+    opLessThan = (7, "LT")
+    opEquals = (8, "EQ")
+    opAdjRelBase = (9, "BASE")
+    opHalt = (99, "HALT")
   Code* = tuple
     op: OpCode
     modes: array[maxNumParameters, Mode]
@@ -106,7 +106,7 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
       opCodeStr = $code.op
 
     when defined(debug):
-      echo &"[{address}] Instruction {opCodeStr} ({code.op.ord}) detected"
+      echo &"\n[{address}] {rawCode} => Instruction {opCodeStr} ({code.op.ord})"
     # Valid opcode check
     doAssert not opCodeStr.contains("(invalid data!)")
 
@@ -120,24 +120,21 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
     for idx in 0 ..< numInputs:
       let
         addr1 = address+idx+1
-      if defined(debug):
-        echo &"addr1 = {addr1}"
       if code.modes[idx] == modeImmediate:
         params[idx] = memory[addr1] # direct
+        if defined(debug):
+          echo &"inp param {idx} ({code.modes[idx]}) = {params[idx]} <<-- addr1={addr1}"
       else:
         let
           addr2 = if code.modes[idx] == modePosition:
                     memory[addr1] # indirect, address relative to 0
                   else:
                     relativeBase+memory[addr1] # indirect, address relative to the relative base
-        if defined(debug):
-          echo &"addr2 = {addr2}"
-        doAssert addr2 >= 0
+        doAssert addr2 >= 0, "Attempt to fetch data from negative address"
         maxAddress = max(maxAddress, addr2)
-        params[idx] = memory.getOrDefault(addr2)
-
-    when defined(debug):
-      echo &"{rawCode} => code = {code}, params = {params}"
+        params[idx] = memory.getOrDefault(addr2) # fetch value as 0 if data fetch is attempted from an unallocated memory
+        if defined(debug):
+          echo &"inp param {idx} ({code.modes[idx]}) = {params[idx]} <<-- addr2={addr2} <- addr1={addr1}"
 
     case code.op
     of opAdd:
@@ -166,15 +163,11 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
         echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       case code.modes[0]
       of modePosition:
-        let
-          addr2 = memory[address+1]
-        echo &"   .. memory[{address+1}] -> memory[{addr2}] => {params[0]}"
+        echo &"   .. memory[{address+1}] -> memory[{memory[address+1]}] => {params[0]}"
       of modeImmediate:
         echo &"   .. memory[{address+1}] => {params[0]}"
       of modeRelative:
-        let
-          addr2 = relativeBase+memory[address+1]
-        echo &"   .. memory[{address+1}] -> memory[{addr2}] => {params[0]}"
+        echo &"   .. memory[{address+1}] -> memory[{relativeBase}+{memory[address+1]}] => {params[0]}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1]
