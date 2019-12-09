@@ -81,7 +81,7 @@ proc parseCode*(code: int): Code =
 var
   id = -1
 
-proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
+proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
   var
     memory: Table[int, int]
     address = initialAddress
