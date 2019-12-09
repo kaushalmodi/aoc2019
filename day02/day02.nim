@@ -118,7 +118,7 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
         addr1 = address+idx+1
       if code.modes[idx] == modeImmediate:
         params[idx] = memory[addr1] # direct
-        if defined(debug):
+        when defined(debug):
           echo &"inp param {idx} ({code.modes[idx]}) = {params[idx]} <<-- addr1={addr1}"
       else:
         let
@@ -129,7 +129,7 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
         doAssert addr2 >= 0, "Attempt to fetch data from negative address"
         maxAddress = max(maxAddress, addr2)
         params[idx] = memory.getOrDefault(addr2) # fetch value as 0 if data fetch is attempted from an unallocated memory
-        if defined(debug):
+        when defined(debug):
           echo &"inp param {idx} ({code.modes[idx]}) = {params[idx]} <<-- addr2={addr2} <- addr1={addr1}"
 
     case code.op
