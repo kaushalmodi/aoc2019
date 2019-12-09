@@ -192,6 +192,8 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
         result.codes.add(memory.getOrDefault(i))
       when defined(debug):
         echo &"Modified memory: {result.codes}"
+        # for i, code in result.codes:
+        #   echo &"{i:>4} {code}"
       result.address = -1
       return
 
@@ -199,10 +201,18 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
       doAssert jumpAddress != address # do not keep on jumping to the current address
       address = jumpAddress
     elif outParamIdx >= 0:
-      # Parameters that an instruction writes to will never be in
-      # immediate mode.
-      doAssert code.modes[outParamIdx] in {modePosition, modeRelative}
-      memory[memory[address+outParamIdx+1].int] = params[outParamIdx]
+      var
+        addr2: int
+      case code.modes[outParamIdx]
+      of modePosition:
+        addr2 = memory[address+outParamIdx+1].int
+        echo &"==> memory[{address+outParamIdx+1}] -> memory[{addr2}] = {params[outParamIdx]}"
+      of modeRelative:
+        addr2 = relativeBase+memory[address+outParamIdx+1].int
+        echo &"==> {relativeBase}+memory[{address+outParamIdx+1}] -> memory[{addr2}] = {params[outParamIdx]}"
+      of modeImmediate:
+        doAssert false, "Parameters that an instruction writes to cannot be in immediate mode."
+      memory[addr2] = params[outParamIdx]
       address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
     else:
       address.inc(1 + numInputs) # incr over the current opcode and input params

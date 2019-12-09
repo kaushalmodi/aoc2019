@@ -34,9 +34,10 @@ when isMainModule:
           0, 0, 0, 0, 0, 0, 0, 0, 0, 0,                  #  90 -> 99
           16]                                            # 100
 
-  # suite "day9 part1 challenge":
-  #   test "check":
-  #     check:
+  suite "day9 part1 challenge":
+    test "check":
+      check:
+        "input.txt".readFileToIntSeq().process(inputs = @[1]).output == 2932210790
 
   # suite "day9 part2 challenge":
   #   test "check":
