@@ -33,7 +33,7 @@ type
   ProcessOut* = tuple
     address: int
     codes: seq[int]
-    output: int
+    outputs: seq[int]
 
 # opcode spec
 let
@@ -161,20 +161,20 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
             result.codes.add(memory.getOrDefault(i))
           return
     of opOutput:
-      result.output = params[0]
+      result.outputs.add(params[0])
       when defined(debug):
         echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       case code.modes[0]
       of modePosition:
         let
           addr2 = memory[address+1]
-        echo &"   .. memory[{address+1}] -> memory[{addr2}] => {result.output}"
+        echo &"   .. memory[{address+1}] -> memory[{addr2}] => {params[0]}"
       of modeImmediate:
-        echo &"   .. memory[{address+1}] => {result.output}"
+        echo &"   .. memory[{address+1}] => {params[0]}"
       of modeRelative:
         let
           addr2 = relativeBase+memory[address+1]
-        echo &"   .. memory[{address+1}] -> memory[{addr2}] => {result.output}"
+        echo &"   .. memory[{address+1}] -> memory[{addr2}] => {params[0]}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1]
