@@ -206,10 +206,12 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
       case code.modes[outParamIdx]
       of modePosition:
         addr2 = memory[address+outParamIdx+1].int
-        echo &"==> memory[{address+outParamIdx+1}] -> memory[{addr2}] = {params[outParamIdx]}"
+        when defined(debug):
+          echo &"==> memory[{address+outParamIdx+1}] -> memory[{addr2}] = {params[outParamIdx]}"
       of modeRelative:
         addr2 = relativeBase+memory[address+outParamIdx+1].int
-        echo &"==> {relativeBase}+memory[{address+outParamIdx+1}] -> memory[{addr2}] = {params[outParamIdx]}"
+        when defined(debug):
+          echo &"==> memory[{address+outParamIdx+1}] -> memory[{relativeBase}+{addr2-relativeBase}] = {params[outParamIdx]}"
       of modeImmediate:
         doAssert false, "Parameters that an instruction writes to cannot be in immediate mode."
       memory[addr2] = params[outParamIdx]
