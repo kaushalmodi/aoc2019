@@ -95,10 +95,6 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
   for idx, code in codes:
     memory[idx] = code
 
-  when defined(debug):
-    var
-      prevOpCode: OpCode
-
   while true:
     let
       rawCode = memory[address]
@@ -159,8 +155,6 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
           return
     of opOutput:
       result.outputs.add(params[0])
-      when defined(debug):
-        echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       case code.modes[0]
       of modePosition:
         echo &"   .. memory[{address+1}] -> memory[{memory[address+1]}] => {params[0]}"
@@ -185,7 +179,7 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
     of opAdjRelBase:
       relativeBase.inc(params[0])
       when defined(debug):
-        echo &"[{address}] Relative base = {relativeBase}"
+        echo &"  new relative base = {relativeBase}"
     of opHalt:
       if not quiet:
         echo &"[{address}] Quitting .."
@@ -227,9 +221,6 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
     else:
       address.inc(1 + numInputs) # incr over the current opcode and input params
     result.address = address
-    when defined(debug):
-      echo &".. next address = {address}"
-      prevOpCode = code.op
 
 when isMainModule:
   import std/[os, unittest]
