@@ -106,7 +106,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       opCodeStr = $code.op
 
     when defined(debug):
-      echo &"[{address}] Instruction {opCodeStr} ({code.op}) detected"
+      echo &"[{address}] Instruction {opCodeStr} ({code.op.ord}) detected"
     # Valid opcode check
     doAssert not opCodeStr.contains("(invalid data!)")
 

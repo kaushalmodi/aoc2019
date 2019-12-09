@@ -18,7 +18,7 @@ when isMainModule:
         # 64-bit machines.
         @[104, 1125899906842624.int, 99].process().output == 1125899906842624
 
-    test "available memory needed to be larger than the program memory":
+    test "write to memory addresses larger than the input program":
       check:
         @[109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99].process().codes ==
         @[109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, #   0 -> 9
