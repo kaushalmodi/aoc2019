@@ -9,6 +9,7 @@ type
   Mode* = enum
     modePosition = 0
     modeImmediate
+    modeRelative
   OpCode* = enum
     opAdd = 1
     opMul = 2
@@ -18,6 +19,7 @@ type
     opJumpIfFalse = 6
     opLessThan = 7
     opEquals = 8
+    opAdjRelBase = 9
     opHalt = 99
   Code* = tuple
     op: OpCode
@@ -35,13 +37,14 @@ let
   spec: Table[string, Spec] =
     { $opAdd         : (numInputs: 2, outParamIdx: 2),
       $opMul         : (numInputs: 2, outParamIdx: 2),
-      $opHalt        : (numInputs: 0, outParamIdx: -1),
       $opInput       : (numInputs: 0, outParamIdx: 0),
       $opOutput      : (numInputs: 1, outParamIdx: -1),
       $opJumpIfTrue  : (numInputs: 2, outParamIdx: -1),
       $opJumpIfFalse : (numInputs: 2, outParamIdx: -1),
       $opLessThan    : (numInputs: 2, outParamIdx: 2),
-      $opEquals      : (numInputs: 2, outParamIdx: 2) }.toTable
+      $opEquals      : (numInputs: 2, outParamIdx: 2),
+      $opAdjRelBase  : (numInputs: 1, outParamIdx: -1),
+      $opHalt        : (numInputs: 0, outParamIdx: -1) }.toTable
 
 proc parseCode*(code: int): Code =
   doAssert code >= 1 # opAdd
@@ -56,7 +59,10 @@ proc parseCode*(code: int): Code =
   else:
     result.op = codeStr[codeLen-2 .. codeLen-1].parseInt().OpCode
     for idx, m in codeStr[0 ..< codeLen-maxOpCodeLen]:
-      doAssert (m in {'0', '1'})
+      let
+        mode = parseInt($m).Mode
+        mStr = $mode
+      doAssert not mStr.contains("(invalid data!)")
       #|---------+-----+-------------|
       #| codeLen | idx | modes index |
       #|---------+-----+-------------|
@@ -67,18 +73,19 @@ proc parseCode*(code: int): Code =
       #|       5 |   1 | 5-1-3 = 1   |
       #|       5 |   2 | 5-2-3 = 0   |
       #|---------+-----+-------------|
-      result.modes[codeLen-idx-maxNumParameters] = parseInt($m).Mode
+      result.modes[codeLen-idx-maxNumParameters] = mode
 
 proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
   var
     codes = codes # Make the input codes mutable
     address = initialAddress
+    relativeBase = 0
     inputIdx = -1
   when defined(debug):
     var
       prevOpCode: OpCode
 
-  while address < codes.len():
+  while address < codes.len:
     let
       rawCode = codes[address]
       code = rawCode.parseCode()
@@ -97,10 +104,23 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
 
     (numInputs, outParamIdx) = spec[opCodeStr]
     for idx in 0 ..< numInputs:
-      if code.modes[idx] == modePosition:
-        params[idx] = codes[codes[address+idx+1]] # indirect
+      let
+        addr1 = address+idx+1
+      if defined(debug):
+        echo &"addr1 = {addr1}"
+      doAssert addr1 < codes.len
+      if code.modes[idx] == modeImmediate:
+        params[idx] = codes[addr1] # direct
       else:
-        params[idx] = codes[address+idx+1]        # direct
+        let
+          addr2 = if code.modes[idx] == modePosition:
+                    codes[addr1] # indirect, address relative to 0
+                  else:
+                    relativeBase+codes[addr1] # indirect, address relative to the relative base
+        if defined(debug):
+          echo &"addr2 = {addr2}"
+        doAssert addr2 >= 0 and addr2 < codes.len
+        params[idx] = codes[addr2]
 
     when defined(debug):
       echo &"{rawCode} => code = {code}, params = {params}"
@@ -128,10 +148,13 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       result.output = params[0]
       when defined(debug):
         echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
-      if code.modes[0] == modePosition:
+      case code.modes[0]
+      of modePosition:
         echo &"   .. codes[{address+1}] -> codes[{codes[address+1]}] => {result.output}"
-      else:
+      of modeImmediate:
         echo &"   .. codes[{address+1}] => {result.output}"
+      of modeRelative:
+        echo &"   .. codes[{address+1}] -> codes[{relativeBase+codes[address+1]}] => {result.output}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1]
@@ -146,6 +169,10 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       params[outParamIdx] = 0
       if params[0] == params[1]:
         params[outParamIdx] = 1
+    of opAdjRelBase:
+      relativeBase = relativeBase + params[0]
+      when defined(debug):
+        echo &"[{address}] Relative base = {relativeBase}"
     of opHalt:
       if not quiet:
         echo &"[{address}] Quitting .."
