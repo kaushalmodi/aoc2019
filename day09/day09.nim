@@ -14,6 +14,10 @@ when isMainModule:
     test "64-bit support":
       check:
         @[1102, 34915192, 34915192, 7, 4, 7, 99, 0].process().output == 1219070632396864
+        # Note set 'i64 conversion to the first element to let the
+        # compiler know that the `codes` input to the `process` proc
+        # needs to be `seq[int64]`.
+        @[104'i64, 1125899906842624, 99].process().output == 1125899906842624
 
   # suite "day9 part1 challenge":
   #   test "check":

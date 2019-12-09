@@ -27,10 +27,10 @@ type
   Spec* = tuple
     numInputs: int
     outParamIdx: int
-  ProcessOut* = tuple
-    address: int
-    codes: seq[int]
-    output: int
+  ProcessOut*[T] = tuple
+    address: T
+    codes: seq[T]
+    output: T
 
 # opcode spec
 let
@@ -46,7 +46,7 @@ let
       $opAdjRelBase  : (numInputs: 1, outParamIdx: -1),
       $opHalt        : (numInputs: 0, outParamIdx: -1) }.toTable
 
-proc parseCode*(code: int): Code =
+proc parseCode*(code: SomeInteger): Code =
   doAssert code >= 1 # opAdd
   let
     codeStr = $code
@@ -75,7 +75,7 @@ proc parseCode*(code: int): Code =
       #|---------+-----+-------------|
       result.modes[codeLen-idx-maxNumParameters] = mode
 
-proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
+proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut[SomeInteger] =
   var
     codes = codes # Make the input codes mutable
     address = initialAddress
@@ -97,7 +97,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
     doAssert not opCodeStr.contains("(invalid data!)")
 
     var
-      params: array[maxNumParameters, int]
+      params: array[maxNumParameters, SomeInteger]
       numInputs = 0
       outParamIdx = -1
       jumpAddress = -1
@@ -157,10 +157,10 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
         echo &"   .. codes[{address+1}] -> codes[{relativeBase+codes[address+1]}] => {result.output}"
     of opJumpIfTrue:
       if params[0] != 0:
-        jumpAddress = params[1]
+        jumpAddress = params[1].int
     of opJumpIfFalse:
       if params[0] == 0:
-        jumpAddress = params[1]
+        jumpAddress = params[1].int
     of opLessThan:
       params[outParamIdx] = 0
       if params[0] < params[1]:
@@ -170,7 +170,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       if params[0] == params[1]:
         params[outParamIdx] = 1
     of opAdjRelBase:
-      relativeBase = relativeBase + params[0]
+      relativeBase = relativeBase + params[0].int
       when defined(debug):
         echo &"[{address}] Relative base = {relativeBase}"
     of opHalt:
