@@ -52,8 +52,9 @@ proc render(image: Image): string =
     let
       line = result[row*image.width ..< (row+1)*image.width]
     for digit in line:
-      if digit == '0': stdout.write("  ")
-      else: stdout.write("\u2591\u2591")
+      doAssert digit.Pixel in {pBlack, pWhite}
+      if digit.Pixel == pBlack: stdout.write("  ")
+      else: stdout.write("██")
     echo ""
 
 when isMainModule:
