@@ -1,4 +1,3 @@
-import std/[strformat]
 import days_utils, day02 # intcode
 
 when isMainModule:

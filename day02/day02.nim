@@ -1,4 +1,7 @@
 import std/[strformat, strutils, tables]
+when not defined(memdump):
+  import std/[os]
+import days_utils
 
 const
   maxNumParameters* = 3
@@ -75,6 +78,9 @@ proc parseCode*(code: int): Code =
       #|---------+-----+-------------|
       result.modes[codeLen-idx-maxNumParameters] = mode
 
+var
+  id = -1
+
 proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
   var
     memory: Table[int, int]
@@ -82,6 +88,8 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
     maxAddress = codes.len
     relativeBase = 0
     inputIdx = -1
+
+  id.inc
 
   # Populate the memory
   for idx, code in codes:
@@ -182,7 +190,7 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       if params[0] == params[1]:
         params[outParamIdx] = 1
     of opAdjRelBase:
-      relativeBase = relativeBase + params[0]
+      relativeBase.inc(params[0])
       when defined(debug):
         echo &"[{address}] Relative base = {relativeBase}"
     of opHalt:
@@ -190,10 +198,17 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
         echo &"[{address}] Quitting .."
       for i in 0 ..< maxAddress:
         result.codes.add(memory.getOrDefault(i))
-      when defined(debug):
-        echo &"Modified memory: {result.codes}"
-        # for i, code in result.codes:
-        #   echo &"{i:>4} {code}"
+      let
+        memDumpFile = prjDir(&"memdump{id}.txt")
+      when defined(memdump):
+        var
+          memDumpStr: string
+        for i, code in result.codes:
+          memDumpStr.add(&"{i:>4}: {code}\n")
+        memDumpFile.writeFile(memDumpStr)
+      else:
+        discard memDumpFile.tryRemoveFile()
+
       result.address = -1
       return
 
@@ -201,19 +216,19 @@ proc process*(codes: seq[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet
       doAssert jumpAddress != address # do not keep on jumping to the current address
       address = jumpAddress
     elif outParamIdx >= 0:
+      doAssert code.modes[outParamIdx] != modeImmediate,
+         "Parameters that an instruction writes to cannot be in immediate mode."
       var
-        addr2: int
-      case code.modes[outParamIdx]
-      of modePosition:
         addr2 = memory[address+outParamIdx+1]
+      when defined(debug):
+        stdout.write &"==> memory[{address+outParamIdx+1}] -> "
+      if code.modes[outParamIdx] == modePosition:
         when defined(debug):
-          echo &"==> memory[{address+outParamIdx+1}] -> memory[{addr2}] = {params[outParamIdx]}"
-      of modeRelative:
-        addr2 = relativeBase+memory[address+outParamIdx+1]
+          echo &"memory[{memory[address+outParamIdx+1]}] = {params[outParamIdx]}"
+      elif code.modes[outParamIdx] == modeRelative:
+        addr2.inc(relativeBase)
         when defined(debug):
-          echo &"==> memory[{address+outParamIdx+1}] -> memory[{relativeBase}+{addr2-relativeBase}] = {params[outParamIdx]}"
-      of modeImmediate:
-        doAssert false, "Parameters that an instruction writes to cannot be in immediate mode."
+          echo &"memory[{relativeBase}+{addr2-relativeBase}] = {params[outParamIdx]}"
       memory[addr2] = params[outParamIdx]
       address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
     else:
