@@ -77,17 +77,23 @@ proc parseCode*(code: SomeInteger): Code =
 
 proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut[SomeInteger] =
   var
-    codes = codes # Make the input codes mutable
+    memory: Table[int, SomeInteger]
     address = initialAddress
+    maxAddress = codes.len
     relativeBase = 0
     inputIdx = -1
+
+  # Populate the memory
+  for idx, code in codes:
+    memory[idx] = code
+
   when defined(debug):
     var
       prevOpCode: OpCode
 
-  while address < codes.len:
+  while true:
     let
-      rawCode = codes[address]
+      rawCode = memory[address]
       code = rawCode.parseCode()
       opCodeStr = $code.op
 
@@ -108,19 +114,19 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
         addr1 = address+idx+1
       if defined(debug):
         echo &"addr1 = {addr1}"
-      doAssert addr1 < codes.len
       if code.modes[idx] == modeImmediate:
-        params[idx] = codes[addr1] # direct
+        params[idx] = memory[addr1] # direct
       else:
         let
           addr2 = if code.modes[idx] == modePosition:
-                    codes[addr1] # indirect, address relative to 0
+                    memory[addr1] # indirect, address relative to 0
                   else:
-                    relativeBase+codes[addr1] # indirect, address relative to the relative base
+                    relativeBase+memory[addr1] # indirect, address relative to the relative base
         if defined(debug):
           echo &"addr2 = {addr2}"
-        doAssert addr2 >= 0 and addr2 < codes.len
-        params[idx] = codes[addr2]
+        doAssert addr2 >= 0
+        maxAddress = max(maxAddress, addr2.int)
+        params[idx] = memory.getOrDefault(addr2.int)
 
     when defined(debug):
       echo &"{rawCode} => code = {code}, params = {params}"
@@ -143,6 +149,8 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
           # If the input queue is empty, return.  The saved state of
           # the current address (instruction pointer) and the modified
           # code are part of the returned data for future restore.
+          for i in 0 ..< maxAddress:
+            result.codes.add(memory.getOrDefault(i))
           return
     of opOutput:
       result.output = params[0]
@@ -150,11 +158,15 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
         echo &"Instruction run before this {code.op} instruction: {prevOpCode}"
       case code.modes[0]
       of modePosition:
-        echo &"   .. codes[{address+1}] -> codes[{codes[address+1]}] => {result.output}"
+        let
+          addr2 = memory[address+1].int
+        echo &"   .. memory[{address+1}] -> memory[{addr2}] => {result.output}"
       of modeImmediate:
-        echo &"   .. codes[{address+1}] => {result.output}"
+        echo &"   .. memory[{address+1}] => {result.output}"
       of modeRelative:
-        echo &"   .. codes[{address+1}] -> codes[{relativeBase+codes[address+1]}] => {result.output}"
+        let
+          addr2 = relativeBase+memory[address+1].int
+        echo &"   .. memory[{address+1}] -> memory[{addr2}] => {result.output}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1].int
@@ -176,8 +188,10 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
     of opHalt:
       if not quiet:
         echo &"[{address}] Quitting .."
+      for i in 0 ..< maxAddress:
+        result.codes.add(memory.getOrDefault(i))
       when defined(debug):
-        echo &"Modified codes: {codes}"
+        echo &"Modified memory: {result.codes}"
       result.address = -1
       return
 
@@ -188,7 +202,7 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
       # Parameters that an instruction writes to will never be in
       # immediate mode.
       doAssert code.modes[outParamIdx] == modePosition
-      codes[codes[address+outParamIdx+1]] = params[outParamIdx]
+      memory[memory[address+outParamIdx+1].int] = params[outParamIdx]
       address.inc(1 + numInputs + 1) # incr over the current opcode, input params and output param
     else:
       address.inc(1 + numInputs) # incr over the current opcode and input params
@@ -196,8 +210,6 @@ proc process*(codes: seq[SomeInteger]; inputs: seq[int] = @[]; initialAddress = 
     when defined(debug):
       echo &".. next address = {address}"
       prevOpCode = code.op
-
-    result.codes = codes
 
 when isMainModule:
   import std/[os, unittest]
