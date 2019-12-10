@@ -106,6 +106,7 @@ proc maxNumAsteroidsDetected(map: var Map): (Coord, int) =
       result = (coord, map[coord])
 
 proc getVaporizedAsteroids(map: var Map; loc: Coord): seq[Coord] =
+  doAssert map.hasKey(loc)
   var
     mapCopy = map
   while true:
@@ -231,6 +232,7 @@ when isMainModule:
 
     test "part1":
       check:
+        refVal[0] == (19, 14)
         refVal[1] == 274
 
     test "part2":
