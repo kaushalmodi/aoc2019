@@ -82,11 +82,6 @@ proc maxNumAsteroidsDetected(map: var Map): (Coord, int) =
     if map[coord] > result[1]:
       result = (coord, map[coord])
 
-proc maxNumAsteroidsDetected(mapStr: seq[string]): (Coord, int) =
-  var
-    map = mapStr.initMap()
-  return map.maxNumAsteroidsDetected()
-
 proc getVaporizedAsteroids(map: var Map; loc: Coord): seq[Coord] =
   var
     mapCopy = map
@@ -102,14 +97,14 @@ proc getVaporizedAsteroids(map: var Map; loc: Coord): seq[Coord] =
     if mapCopy.len == 0:
       break
 
-proc getVaporizedAsteroids(mapStr: seq[string]; loc: Coord): seq[Coord] =
-  var
-    map = mapStr.initMap()
-  return map.getVaporizedAsteroids(loc)
-
 when isMainModule:
   import std/[unittest]
   import days_utils
+
+  proc maxNumAsteroidsDetected(mapStr: seq[string]): (Coord, int) =
+    var
+      map = mapStr.initMap()
+    return map.maxNumAsteroidsDetected()
 
   suite "day10 small examples":
     test "example 1":
@@ -209,7 +204,7 @@ when isMainModule:
         map = "input.txt".readFileToStrSeq().initMap()
         refVal = map.maxNumAsteroidsDetected()
       let
-        vaporizedAsteroids = "input.txt".readFileToStrSeq().getVaporizedAsteroids(refVal[0])
+        vaporizedAsteroids = map.getVaporizedAsteroids(refVal[0])
 
     test "part1":
       check:
