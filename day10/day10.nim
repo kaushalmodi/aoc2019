@@ -14,31 +14,34 @@ proc initMap(map: seq[string]): Map =
 
 proc calcAngle(a, b: Coord): float =
   ## Return the angle of ``a`` looking at ``b`` in degrees.
+  ## Angle is 0 degrees when ``b`` is in a straight line above ``a``.
+  ## Angle is 90 degrees when ``b`` is in a straight line to the right of ``a``.
+  ## Angle is 180 degrees when ``b`` is in a straight line below ``a``.
+  ## And so on ..
   doAssert a != b
-  if a.y == b.y:
-    if a.x < b.x:
-      return 0.0 # a is in a straight line to the left of b
-    else:
-      return 180.0 # a is in a straight line to the right of b
   if a.x == b.x:
     if a.y > b.y:
-      return 90.0 # a is in a straight line below b
+      return 0.0 # b is in a straight line above a
     else:
-      return 90.0 + 180.0  # a is in a straight line above b
+      return 180.0 # b is in a straight line below a
+  if a.y == b.y:
+    if a.x < b.x:
+      return 90.0 # b is in a straight line to the right of a
+    else:
+      return 90.0 + 180.0 # b is in a straight line to the left of a
   let
     oppAdj = abs(a.y - b.y) / abs(a.x - b.x)
-  # Below result will be correct if b were in the top-right quadrant
-  # with respect to a i.e. b.x > a.x and b.y < a.y
-  result = oppAdj.arctan().radToDeg()
-  # Adjust the angle now if b is *not* in the top-right quadrant.
-  if b.x > a.x:
-    if b.y > a.y: # b is in bottom-right quadrant with respect to a
-      return 360.0 - result
+    acuteAngleAlongXAxis = oppAdj.arctan().radToDeg()
+  if a.x < b.x:
+    if b.y < a.y: # b is in top-right quadrant with respect to a
+      return 90.0 - acuteAngleAlongXAxis
+    else: # b is in bottom-right quadrant with respect to a
+      return 90.0 + acuteAngleAlongXAxis
   else:
-    if b.y > a.y: # b is in bottom-left quadrant with respect to a
-      return 180.0 + result
-    else: # b is in top-left quadrant with respect to a
-      return 180.0 - result
+    if b.y < a.y: # b is in top-left quadrant with respect to a
+      return 270.0 + acuteAngleAlongXAxis
+    else: # b is in bottom-left quadrant with respect to a
+      return 270.0 - acuteAngleAlongXAxis
 
 proc updateAsteroidsDetCounts(map: var Map; loc: Coord) =
   var
