@@ -1,8 +1,8 @@
 import std/[strformat]
-import days_utils
 
 when isMainModule:
   import std/[unittest]
+  import days_utils
 
   suite "dayX tests":
     setup:
