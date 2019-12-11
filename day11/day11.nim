@@ -55,6 +55,9 @@ proc paint(sw: seq[int]; startPanelColor = cWhite): PaintOut =
   # Starting position
   result.pos = Position(coord: (0, 0), dir: dUp)
   while true:
+    doAssert state.outputs.len == 2
+    for op in state.outputs:
+      doAssert op in {0, 1}
     # First, it will output a value indicating the color to paint the
     # panel the robot is over.
     result.hull[result.pos.coord] = state.outputs[0].Color
