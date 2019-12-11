@@ -58,11 +58,11 @@ proc paint(sw: seq[int]; startPanelColor = cWhite): PaintOut =
     # First, it will output a value indicating the color to paint the
     # panel the robot is over.
     result.hull[result.pos.coord] = state.outputs[0].Color
-    stdout.write &"[{i:<3}] Painted {result.pos.coord} {result.hull[result.pos.coord]}, "
+    stdout.write &"[{i:>4}] Painted {result.pos.coord} {result.hull[result.pos.coord]}, "
     # Second, it will output a value indicating the direction the
     # robot should turn.
     state.outputs[1].updatePosition(result.pos)
-    echo &"turned to {result.pos.dir}, and then moved to {result.pos.coord}"
+    echo &"turned to {result.pos.dir:>5}, and then moved to {result.pos.coord}"
     currentColor = result.hull.getOrDefault(result.pos.coord, panelDefaultColor)
 
     # Continue painting ..
@@ -70,6 +70,7 @@ proc paint(sw: seq[int]; startPanelColor = cWhite): PaintOut =
     # state.address = -1 # for debug
     if state.address == -1:
       break
+    i.inc
 
 proc render(paintOutcome: PaintOut) =
   for y in countdown(paintOutcome.pos.xyMax.y, paintOutcome.pos.xyMin.y):
@@ -83,9 +84,13 @@ when isMainModule:
   import days_utils
 
   suite "day11 part1 challenge":
+    setup:
+      let
+        paintOutcome = "input.txt".readFileToIntSeq().paint(cBlack)
+      paintOutcome.render()
     test "check":
       check:
-        "input.txt".readFileToIntSeq().paint(cBlack).hull.len == 2056
+        paintOutcome.hull.len == 2056
 
   suite "day11 part2 challenge":
     setup:

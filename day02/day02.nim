@@ -146,7 +146,8 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
         if inputIdx < inputs.high:
           inputIdx.inc
           params[outParamIdx] = inputs[inputIdx]
-          echo &"-> {params[outParamIdx]}"
+          when defined(debug):
+            echo &"-> {params[outParamIdx]}"
         else:
           # If the input queue is empty, return.  The saved state of
           # the current address (instruction pointer) and the modified
@@ -156,13 +157,14 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
           return
     of opOutput:
       result.outputs.add(params[0])
-      case code.modes[0]
-      of modePosition:
-        echo &"   .. memory[{address+1}] -> memory[{memory[address+1]}] => {params[0]}"
-      of modeImmediate:
-        echo &"   .. memory[{address+1}] => {params[0]}"
-      of modeRelative:
-        echo &"   .. memory[{address+1}] -> memory[{relativeBase}+{memory[address+1]}] => {params[0]}"
+      when defined(debug):
+        case code.modes[0]
+        of modePosition:
+          echo &"   .. memory[{address+1}] -> memory[{memory[address+1]}] => {params[0]}"
+        of modeImmediate:
+          echo &"   .. memory[{address+1}] => {params[0]}"
+        of modeRelative:
+          echo &"   .. memory[{address+1}] -> memory[{relativeBase}+{memory[address+1]}] => {params[0]}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1]
