@@ -1,7 +1,8 @@
 import std/[strutils, tables]
-import days_utils
 when defined(debug):
   import std/[strformat]
+import days_utils
+import dot_matrix
 
 type
   Pixel = enum
@@ -40,19 +41,21 @@ proc getLeastZeroesLayer(image: Image): Layer =
        pixelCounts[pBlack] < result.pixelCounts[pBlack]:
       result = Layer(content: layer, pixelCounts: pixelCounts)
 
-proc render(image: Image): string =
-  result = image.layers[0]
+proc render(image: Image): seq[int] =
+  var
+    finalImageStr = image.layers[0]
   for layer in image.layers[1 .. ^1]:
-    for i, digit in result:
+    for i, digit in finalImageStr:
       if digit.Pixel == pTrans:
-        result[i] = layer[i]
+        finalImageStr[i] = layer[i]
 
   # Display the image
   for row in 0 ..< image.height:
     let
-      line = result[row*image.width ..< (row+1)*image.width]
+      line = finalImageStr[row*image.width ..< (row+1)*image.width]
     for digit in line:
       doAssert digit.Pixel in {pBlack, pWhite}
+      result.add(digit.ord - '0'.ord)
       if digit.Pixel == pBlack: stdout.write("  ")
       else: stdout.write("██")
     echo ""
@@ -72,10 +75,4 @@ when isMainModule:
 
     test "part2":
       check:
-        layers.render() ==
-        "0110000110100011111001100" &
-          "1001000010100011000010010" &
-          "1000000010010101110010010" &
-          "1011000010001001000011110" &
-          "1001010010001001000010010" &
-          "0111001100001001111010010"
+        layers.render().transpose().parseLetters() == "GJYEA"
