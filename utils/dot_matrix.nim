@@ -3,6 +3,10 @@ import std/[strformat, strutils, tables]
 const
   dot5x6Width = 5
   dot5x6Height = 6
+  # pattern syntax:
+  #   '#': The input seq of letter "dots" needs to have a "non-zero" value at those char locations
+  #   '.': The input seq of letter "dots" needs to have a "zero" value at those char locations
+  #   ' ': The input seq of letter "dots" can have *any* value at those char locations
   patterns5x6: Table[string, array[dot5x6Height, string]] =
     {
       "A1": [" .##.",
@@ -33,6 +37,20 @@ const
              "#..# ",
              "###. "],
 
+      "C1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "D1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
       "E1": [" ####",
              " #...",
              " ### ",
@@ -46,6 +64,13 @@ const
              "#... ",
              "#... ",
              "#### "],
+
+      "F1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
 
       "G1": ["  ## ",
              " #..#",
@@ -61,6 +86,20 @@ const
              "#..# ",
              " ### "],
 
+      "H1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "I1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
       "J1": ["   ##",
              "   .#",
              "   .#",
@@ -74,6 +113,13 @@ const
              "  .# ",
              "#..# ",
              ".##. "],
+
+      "K1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
 
       "L1": [" #.  ",
              " #.  ",
@@ -89,6 +135,27 @@ const
              "#... ",
              "#### "],
 
+      "M1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "N1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "O1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
       "P1": [" ###.",
              " #..#",
              " #..#",
@@ -102,6 +169,62 @@ const
              "###  ",
              "#    ",
              "#    "],
+
+      "Q1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "R1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "S1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "T1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "U1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "V1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "W1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
+
+      "X1": ["",
+             "",
+             "",
+             "",
+             "",
+             ""],
 
       "Y1": ["#...#",
              "#...#",
@@ -128,7 +251,8 @@ const
 var
   patterns5x6Flat: Table[string, string]
 for key, val in patterns5x6.pairs:
-  patterns5x6Flat[key] = val.join("")
+  if val[0] != "":
+    patterns5x6Flat[key] = val.join("")
 
 proc transpose*[T](bits: seq[T]; letterWidth = dot5x6Width, letterHeight = dot5x6Height): seq[seq[T]] =
   let
