@@ -1,5 +1,6 @@
 import std/[strformat, tables]
 import day02 # intcode
+import dot_matrix
 
 type
   Coord = tuple
@@ -75,10 +76,13 @@ proc paint(sw: seq[int]; startPanelColor = cWhite): PaintOut =
       break
     i.inc
 
-proc render(paintOutcome: PaintOut) =
+proc render(paintOutcome: PaintOut): seq[int] =
   for y in countdown(paintOutcome.pos.xyMax.y, paintOutcome.pos.xyMin.y):
     for x in countup(paintOutcome.pos.xyMin.x, paintOutcome.pos.xyMax.x):
-      if paintOutcome.hull.getOrDefault((x, y), panelDefaultColor) == cWhite: stdout.write("██")
+      let
+        pixel = paintOutcome.hull.getOrDefault((x, y), panelDefaultColor)
+      result.add(pixel.ord)
+      if pixel == cWhite: stdout.write("██")
       else: stdout.write("  ")
     echo ""
 
@@ -90,7 +94,7 @@ when isMainModule:
     setup:
       let
         paintOutcome = "input.txt".readFileToIntSeq().paint(cBlack)
-      paintOutcome.render()
+      discard paintOutcome.render()
     test "check":
       check:
         paintOutcome.hull.len == 2056
@@ -99,10 +103,6 @@ when isMainModule:
     setup:
       let
         paintOutcome = "input.txt".readFileToIntSeq().paint()
-      paintOutcome.render()
-
     test "check":
       check:
-        paintOutcome.hull.len == 248
-        paintOutcome.pos.xyMin == (0, -5)
-        paintOutcome.pos.xyMax == (42, 0)
+        paintOutcome.render().transpose().parseLetters() == "GLBEPJZP"
