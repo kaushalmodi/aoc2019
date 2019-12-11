@@ -10,9 +10,11 @@ type
     dRight = "right"
     dDown = "down"
     dLeft = "left"
-  Position = tuple
+  Position = object
     coord: Coord
     dir: Direction
+    xyMin: Coord
+    xyMax: Coord
   Color = enum
     cBlack = (0, "black")
     cWhite = (1, "white")
@@ -41,25 +43,28 @@ proc updatePosition(moveCode: int; pos: var Position) =
   of dRight: pos.coord.x.inc
   of dDown: pos.coord.y.dec
   of dLeft: pos.coord.x.dec
+  pos.xyMin = (min(pos.xyMin.x, pos.coord.x), min(pos.xyMin.y, pos.coord.y))
+  pos.xyMax = (max(pos.xyMax.x, pos.coord.x), max(pos.xyMax.y, pos.coord.y))
 
-proc paint(sw: seq[int]): Hull =
+proc paint(sw: seq[int]; startPanelColor = cWhite): tuple[hull: Hull, pos: Position] =
   var
-    currentColorCode = cBlack.ord
+    currentColorCode = startPanelColor.ord
     address = 0
-    pos: Position = ((0, 0).Coord, dUp)
     state = sw.process(@[currentColorCode]) # Initialize IntCode
     i = 0
 
+  # Starting position
+  result.pos = Position(coord: (0, 0), dir: dUp)
   while true:
     # First, it will output a value indicating the color to paint the
     # panel the robot is over.
-    result[pos.coord] = state.outputs[0].Color
-    stdout.write &"[{i:<3}] Painted {pos.coord} {result[pos.coord]}, and "
+    result.hull[result.pos.coord] = state.outputs[0].Color
+    stdout.write &"[{i:<3}] Painted {result.pos.coord} {result.hull[result.pos.coord]}, and "
     # Second, it will output a value indicating the direction the
     # robot should turn.
-    state.outputs[1].updatePosition(pos)
-    echo &"moved to {pos.coord}, now facing {pos.dir}"
-    currentColorCode = result.getOrDefault(pos.coord).ord
+    state.outputs[1].updatePosition(result.pos)
+    echo &"moved to {result.pos.coord}, now facing {result.pos.dir}"
+    currentColorCode = result.hull.getOrDefault(result.pos.coord).ord
 
     # Continue painting ..
     state = state.codes.process(@[currentColorCode], state.address)
@@ -70,10 +75,12 @@ proc paint(sw: seq[int]): Hull =
 when isMainModule:
   import std/[unittest]
 
-  let
-    paintedHull = "input.txt".readFileToIntSeq().paint()
-
   suite "day11 part1 challenge":
     test "check":
       check:
-        paintedHull.len == 2056
+        "input.txt".readFileToIntSeq().paint(cBlack).hull.len == 2056
+
+  # suite "day11 part2 challenge":
+  #   test "check":
+  #     check:
+  #       true
