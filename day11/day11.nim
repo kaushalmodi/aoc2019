@@ -24,22 +24,18 @@ type
 const
   panelDefaultColor = cBlack
 
-proc turn(currentDir: Direction; clockwise = true): Direction =
-  if clockwise:
-    if currentDir == dLeft:
-      return dUp
-    else:
-      return currentDir.succ
-  else:
-    if currentDir == dUp:
-      return dLeft
-    else:
-      return currentDir.pred
+proc getNext[T: enum](currVal: T; incr = true): T =
+  result = if incr:
+             if currVal == T.high: T.low
+             else: currVal.succ
+           else:
+             if currVal == T.low: T.high
+             else: currVal.pred
 
 proc updatePosition(moveCode: int; pos: var Position) =
   ## ``moveCode`` == 0 means it should turn left 90 degrees,
   ## and 1 means it should turn right 90 degrees.
-  pos.dir = turn(pos.dir, moveCode==1)
+  pos.dir = getNext(pos.dir, moveCode==1)
   # *After* the robot turns, it should always move forward exactly one
   # *panel.
   case pos.dir
