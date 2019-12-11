@@ -248,11 +248,12 @@ const
             "....."]
     }.toTable
 
+proc populatePatternsFlat(): Table[string, string] {.compileTime.} =
+  for key, val in patterns5x6.pairs:
+    if val[0] != "":
+      result[key] = val.join("")
 var
-  patterns5x6Flat: Table[string, string]
-for key, val in patterns5x6.pairs:
-  if val[0] != "":
-    patterns5x6Flat[key] = val.join("")
+  patterns5x6Flat {.compileTime.} = populatePatternsFlat()
 
 proc transpose*[T](bits: seq[T]; letterWidth = dot5x6Width, letterHeight = dot5x6Height): seq[seq[T]] =
   let
