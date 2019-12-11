@@ -32,6 +32,7 @@ type
     outParamIdx: int
   ProcessOut* = tuple
     address: int
+    relativeBase: int
     codes: seq[int]
     outputs: seq[int]
 
@@ -81,12 +82,12 @@ proc parseCode*(code: int): Code =
 var
   id = -1
 
-proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0; quiet = false): ProcessOut =
+proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0, initialRelativeBase = 0; quiet = false): ProcessOut =
   var
     memory: Table[int, int]
     address = initialAddress
+    relativeBase = initialRelativeBase
     maxAddress = codes.len
-    relativeBase = 0
     inputIdx = -1
 
   id.inc
@@ -178,6 +179,7 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0;
         params[outParamIdx] = 1
     of opAdjRelBase:
       relativeBase.inc(params[0])
+      result.relativeBase = relativeBase
       when defined(debug):
         echo &"  new relative base = {relativeBase}"
     of opHalt:
