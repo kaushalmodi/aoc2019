@@ -332,6 +332,7 @@ proc parseLetter*[T](dots: openArray[T]; letterWidth = dot5x6Width, letterHeight
     # Stop searching patterns once a match is found.
     if result.ord > 0: break
   if result.ord == 0:
+    result = '?'
     echo &"[Error] Letter parsing failed for {dots}"
 
 proc parseLetters*[T](letters: openArray[seq[T]]; letterWidth = dot5x6Width, letterHeight = dot5x6Height): string =
@@ -361,7 +362,7 @@ when isMainModule:
 
     test "failed match check":
       check:
-        @[2, 5, 2, 1, 6, 4, 3, 7, 0, 8, 2, 8, 3, 5, 7, 7, 4, 0, 2, 5, 3, 3, 1, 8, 1, 0, 8, 0, 4, 8].parseLetter() == '\0'
+        @[2, 5, 2, 1, 6, 4, 3, 7, 0, 8, 2, 8, 3, 5, 7, 7, 4, 0, 2, 5, 3, 3, 1, 8, 1, 0, 8, 0, 4, 8].parseLetter() == '?'
 
     test "space":
       check:
@@ -467,9 +468,9 @@ when isMainModule:
     #   check:
     #     @[].parseLetter() == 'X'
 
-    # test "Y":
-    #   check:
-    #     @[].parseLetter() == 'Y'
+    test "Y":
+      check:
+        @[1, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0].parseLetter() == 'Y'
 
     test "Z":
       check:
