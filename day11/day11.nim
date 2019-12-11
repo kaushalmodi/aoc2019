@@ -1,5 +1,5 @@
 import std/[strformat, tables]
-import days_utils, day02 # intcode
+import day02 # intcode
 
 type
   Coord = tuple
@@ -19,6 +19,10 @@ type
     cBlack = (0, "black")
     cWhite = (1, "white")
   Hull = Table[Coord, Color]
+  PaintOut = tuple[hull: Hull, pos: Position]
+
+const
+  panelDefaultColor = cBlack
 
 proc turn(currentDir: Direction; clockwise = true): Direction =
   if clockwise:
@@ -46,11 +50,10 @@ proc updatePosition(moveCode: int; pos: var Position) =
   pos.xyMin = (min(pos.xyMin.x, pos.coord.x), min(pos.xyMin.y, pos.coord.y))
   pos.xyMax = (max(pos.xyMax.x, pos.coord.x), max(pos.xyMax.y, pos.coord.y))
 
-proc paint(sw: seq[int]; startPanelColor = cWhite): tuple[hull: Hull, pos: Position] =
+proc paint(sw: seq[int]; startPanelColor = cWhite): PaintOut =
   var
-    currentColorCode = startPanelColor.ord
-    address = 0
-    state = sw.process(@[currentColorCode]) # Initialize IntCode
+    currentColor = startPanelColor
+    state = sw.process(@[currentColor.ord]) # Initialize IntCode
     i = 0
 
   # Starting position
@@ -59,28 +62,43 @@ proc paint(sw: seq[int]; startPanelColor = cWhite): tuple[hull: Hull, pos: Posit
     # First, it will output a value indicating the color to paint the
     # panel the robot is over.
     result.hull[result.pos.coord] = state.outputs[0].Color
-    stdout.write &"[{i:<3}] Painted {result.pos.coord} {result.hull[result.pos.coord]}, and "
+    stdout.write &"[{i:<3}] Painted {result.pos.coord} {result.hull[result.pos.coord]}, "
     # Second, it will output a value indicating the direction the
     # robot should turn.
     state.outputs[1].updatePosition(result.pos)
-    echo &"moved to {result.pos.coord}, now facing {result.pos.dir}"
-    currentColorCode = result.hull.getOrDefault(result.pos.coord).ord
+    echo &"turned to {result.pos.dir}, and then moved to {result.pos.coord}"
+    currentColor = result.hull.getOrDefault(result.pos.coord, panelDefaultColor)
 
     # Continue painting ..
-    state = state.codes.process(@[currentColorCode], state.address)
+    state = state.codes.process(@[currentColor.ord], state.address, state.relativeBase)
     # state.address = -1 # for debug
     if state.address == -1:
       break
 
+proc render(paintOutcome: PaintOut) =
+  for y in countdown(paintOutcome.pos.xyMax.y, paintOutcome.pos.xyMin.y):
+    for x in countup(paintOutcome.pos.xyMin.x, paintOutcome.pos.xyMax.x):
+      if paintOutcome.hull.getOrDefault((x, y), panelDefaultColor) == cWhite: stdout.write("██")
+      else: stdout.write("  ")
+    echo ""
+
 when isMainModule:
   import std/[unittest]
+  import days_utils
 
   suite "day11 part1 challenge":
     test "check":
       check:
         "input.txt".readFileToIntSeq().paint(cBlack).hull.len == 2056
 
-  # suite "day11 part2 challenge":
-  #   test "check":
-  #     check:
-  #       true
+  suite "day11 part2 challenge":
+    setup:
+      let
+        paintOutcome = "input.txt".readFileToIntSeq().paint()
+      paintOutcome.render()
+
+    test "check":
+      check:
+        paintOutcome.hull.len == 248
+        paintOutcome.pos.xyMin == (0, -5)
+        paintOutcome.pos.xyMax == (42, 0)
