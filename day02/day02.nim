@@ -160,11 +160,11 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
       when defined(debug):
         case code.modes[0]
         of modePosition:
-          echo &"   .. memory[{address+1}] -> memory[{memory[address+1]}] => {params[0]}"
+          echo &"  OUTPUT[{result.outputs.high}] .. memory[{address+1}] -> memory[{memory[address+1]}] => {params[0]}"
         of modeImmediate:
-          echo &"   .. memory[{address+1}] => {params[0]}"
+          echo &"  OUTPUT[{result.outputs.high}] .. memory[{address+1}] => {params[0]}"
         of modeRelative:
-          echo &"   .. memory[{address+1}] -> memory[{relativeBase}+{memory[address+1]}] => {params[0]}"
+          echo &"  OUTPUT[{result.outputs.high}] .. memory[{address+1}] -> memory[{relativeBase}+{memory[address+1]}] => {params[0]}"
     of opJumpIfTrue:
       if params[0] != 0:
         jumpAddress = params[1]
