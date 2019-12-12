@@ -184,10 +184,12 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
       if params[0] == params[1]:
         params[outParamIdx] = 1
     of opAdjRelBase:
-      relativeBase.inc(params[0])
-      result.relativeBase = relativeBase
       when defined(debug):
-        echo &"  new relative base = {relativeBase}"
+        let
+          oldRelativeBase = relativeBase
+      relativeBase.inc(params[0])
+      when defined(debug):
+        echo &"  new relative base = {oldRelativeBase} + {params[0]} = {relativeBase}"
     of opHalt:
       if not quiet:
         echo &"[{address}] Quitting .."
@@ -229,6 +231,7 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
     else:
       address.inc(1 + numInputs) # incr over the current opcode and input params
     result.address = address
+    result.relativeBase = relativeBase
 
 when isMainModule:
   import std/[os, unittest]
