@@ -2,11 +2,11 @@ import std/[strformat, strutils, strscans]
 import days_utils
 
 type
-  Coord = tuple
+  Coord = object
     x: int
     y: int
     z: int
-  PosVel = tuple
+  PosVel = object
     pos: Coord
     vel: Coord
 
@@ -14,8 +14,10 @@ proc parseCoords(fileName: string): seq[Coord] =
   let
     moons = fileName.prjDir().readFile().strip().splitLines()
   for idx, moon in moons:
-    result.add((0, 0, 0))
-    discard scanf(moon, "<x=$i, y=$i, z=$i>", result[idx].x, result[idx].y, result[idx].z)
+    var
+      x, y, z: int
+    discard scanf(moon, "<x=$i, y=$i, z=$i>", x, y, z)
+    result.add(Coord(x: x, y: y, z: z))
 
 proc applyVelocity(posVel: var PosVel) =
   posVel.pos.x += posVel.vel.x
@@ -61,7 +63,8 @@ proc runTime(moons: seq[Coord]; timeMax: int): int =
   var
     posVels = newSeq[PosVel](moons.len)
   for idx, moon in moons:
-    posVels[idx].pos = moon
+    posVels[idx] = PosVel(pos: moon)
+
   for t in 0 ..< timeMax:
     applyGravity(posVels)
     when defined(debug):
@@ -78,9 +81,9 @@ proc timeToInitState(moons: seq[Coord]): int =
   result = 1
   var
     posVels = newSeq[PosVel](moons.len)
-
   for idx, moon in moons:
-    posVels[idx].pos = moon
+    posVels[idx] = PosVel(pos: moon)
+
   while true:
     applyGravity(posVels)
     var
