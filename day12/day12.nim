@@ -88,10 +88,13 @@ proc timeToInitState(moons: seq[Coord]): int =
     applyGravity(posVels)
     var
       backToInit = true
-    for idx, moon in moons:
-      if posVels[idx].pos != moon:
-        backToInit = false
-        break
+    backToInit = posVels[0].pos == moons[0]
+    if backToInit:
+      backToInit = posVels[1].pos == moons[1]
+      if backToInit:
+        backToInit = posVels[2].pos == moons[2]
+        if backToInit:
+          backToInit = posVels[3].pos == moons[3]
     result.inc
     if backToInit:
       break
