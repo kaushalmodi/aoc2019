@@ -24,7 +24,7 @@ proc applyVelocity(posVel: var PosVel) =
   posVel.pos.y += posVel.vel.y
   posVel.pos.z += posVel.vel.z
 
-proc applyGravity(posVels: var seq[PosVel]) =
+proc applyGravity(posVels: var openArray[PosVel]) =
   for i in 0 .. posVels.high:
     if i < posVels.high:
       for j in i+1 .. posVels.high:
@@ -50,7 +50,7 @@ proc applyGravity(posVels: var seq[PosVel]) =
           posVels[j].vel.z.inc
     posVels[i].applyVelocity()
 
-proc calcEnergy(posVels: var seq[PosVel]): int =
+proc calcEnergy(posVels: var openArray[PosVel]): int =
   for posVel in posVels:
     var
       pot: int
@@ -59,7 +59,7 @@ proc calcEnergy(posVels: var seq[PosVel]): int =
     for val in posVel.vel.fields: kin.inc(abs(val))
     result.inc(pot*kin)
 
-proc runTime(moons: seq[Coord]; timeMax: int): int =
+proc runTime(moons: openArray[Coord]; timeMax: int): int =
   var
     posVels = newSeq[PosVel](moons.len)
   for idx, moon in moons:
@@ -77,7 +77,7 @@ proc runTime(moons: seq[Coord]; timeMax: int): int =
   result = posVels.calcEnergy()
   echo &"total energy after {timeMax} time steps = {result}"
 
-proc timeToInitState(moons: seq[Coord]): int =
+proc timeToInitState(moons: openArray[Coord]): int =
   result = 1
   var
     posVels = newSeq[PosVel](moons.len)
