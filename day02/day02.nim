@@ -17,13 +17,13 @@ type
     opAdd = (1, "ADD")
     opMul = (2, "MUL")
     opInput = (3, "INP")
-    opOutput = (4, "OUTP")
-    opJumpIfTrue = (5, "JIT")
-    opJumpIfFalse = (6, "JIF")
+    opOutput = (4, "OUT")
+    opJumpIfTrue = (5, "JNZ")
+    opJumpIfFalse = (6, "JZ")
     opLessThan = (7, "LT")
     opEquals = (8, "EQ")
-    opAdjRelBase = (9, "BASE")
-    opHalt = (99, "HALT")
+    opAdjRelBase = (9, "URB")
+    opHalt = (99, "HLT")
   Code* = tuple
     op: OpCode
     modes: array[maxNumParameters, Mode]
@@ -103,7 +103,9 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
       opCodeStr = $code.op
 
     when defined(debug):
-      echo &"\n[{address}] {rawCode} => Instruction {opCodeStr} ({code.op.ord})"
+      if code.op != opInput or
+         inputs.len > 0 and inputIdx < inputs.high: # Do not print below for opInput opcode if the input queue is empty
+        echo &"\n[{address}] {rawCode} => Instruction {opCodeStr} ({code.op.ord})"
     # Valid opcode check
     doAssert not opCodeStr.contains("(invalid data!)")
 
@@ -154,6 +156,8 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
           # code are part of the returned data for future restore.
           for i in 0 ..< maxAddress:
             result.codes.add(memory.getOrDefault(i))
+          when defined(debug):
+            echo "Input queue empty, returning .."
           return
     of opOutput:
       result.outputs.add(params[0])
