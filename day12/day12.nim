@@ -111,11 +111,21 @@ proc timeToInitState(moons: openArray[Coord]): int =
   # independently. The answer is "just an LCM" of the times takes for each of
   # X, Y and Z velocities to get back to 0.
   #
-  # Thu Dec 12 12:45:33 EST 2019 - kmodi - I need to understand how LCM works in this case.
+  # Below diagram (courtesy Reddit poster /u/eoincampbell) nicely visualizes how the X, Y, Z
+  # coordinates cycle, how they are independent of each other and how LCM can calculate the
+  # "sync point" for all 3 co-ordinates.
+  #
+  #  As an example, say X cycles every 3 steps, Y every 5, Z every 6.
+  #
+  #    X: __3__3__3__3__3__3__3__3__3__3__3__3__3__3__3__3__3__3__3__3
+  #    Y: ____5____5____5____5____5____5____5____5____5____5____5____5
+  #    Z: _____6_____6_____6_____6_____6_____6_____6_____6_____6_____6
+  #                                    ^lcm-sync                     ^lcm-sync
   #
   # References:
   # - https://www.reddit.com/r/adventofcode/comments/e9j0ve/2019_day_12_solutions/fakf7lb
   # - https://github.com/AxlLind/AdventOfCode2019/blob/master/src/bin/12-bonus.rs
+  # - Above diagram: https://www.reddit.com/r/adventofcode/comments/e9tjel/2019_day_12_2_c_need_an_satisfactory_explanation/
   for i in 0 ..< 3:
     while true:
       posVelsAxes[i].updatePosVel()
