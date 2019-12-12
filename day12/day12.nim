@@ -6,18 +6,20 @@ type
     x: int
     y: int
     z: int
+  CoordArr = array[4, Coord]
   PosVel = object
     pos: Coord
     vel: Coord
+  PosVelArr = array[4, PosVel]
 
-proc parseCoords(fileName: string): seq[Coord] =
+proc parseCoords(fileName: string): CoordArr =
   let
     moons = fileName.prjDir().readFile().strip().splitLines()
   for idx, moon in moons:
     var
       x, y, z: int
     discard scanf(moon, "<x=$i, y=$i, z=$i>", x, y, z)
-    result.add(Coord(x: x, y: y, z: z))
+    result[idx] = Coord(x: x, y: y, z: z)
 
 proc applyVelocity(posVel: var PosVel) =
   posVel.pos.x += posVel.vel.x
@@ -61,7 +63,7 @@ proc calcEnergy(posVels: var openArray[PosVel]): int =
 
 proc runTime(moons: openArray[Coord]; timeMax: int): int =
   var
-    posVels = newSeq[PosVel](moons.len)
+    posVels: PosVelArr
   for idx, moon in moons:
     posVels[idx] = PosVel(pos: moon)
 
@@ -80,7 +82,7 @@ proc runTime(moons: openArray[Coord]; timeMax: int): int =
 proc timeToInitState(moons: openArray[Coord]): int =
   result = 1
   var
-    posVels = newSeq[PosVel](moons.len)
+    posVels: PosVelArr
   for idx, moon in moons:
     posVels[idx] = PosVel(pos: moon)
 
