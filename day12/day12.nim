@@ -6,27 +6,29 @@ type
     x: int
     y: int
     z: int
-  CoordArr = array[4, Coord]
+  CoordRef = ref Coord
+  CoordRefArr = array[4, CoordRef]
   PosVel = object
-    pos: Coord
-    vel: Coord
-  PosVelArr = array[4, PosVel]
+    pos: CoordRef
+    vel: CoordRef
+  PosVelRef = ref PosVel
+  PosVelRefArr = array[4, PosVelRef]
 
-proc parseCoords(fileName: string): CoordArr =
+proc parseCoords(fileName: string): CoordRefArr =
   let
     moons = fileName.prjDir().readFile().strip().splitLines()
   for idx, moon in moons:
     var
       x, y, z: int
     discard scanf(moon, "<x=$i, y=$i, z=$i>", x, y, z)
-    result[idx] = Coord(x: x, y: y, z: z)
+    result[idx] = CoordRef(x: x, y: y, z: z)
 
-proc applyVelocity(posVel: var PosVel) =
-  posVel.pos.x += posVel.vel.x
-  posVel.pos.y += posVel.vel.y
-  posVel.pos.z += posVel.vel.z
+proc applyVelocity(posVelRef: PosVelRef) =
+  posVelRef.pos.x += posVelRef.vel.x
+  posVelRef.pos.y += posVelRef.vel.y
+  posVelRef.pos.z += posVelRef.vel.z
 
-proc applyGravity(posVels: var openArray[PosVel]) =
+proc applyGravity(posVels: openArray[PosVelRef]) =
   for i in 0 .. posVels.high:
     for j in i+1 .. posVels.high:
       if posVels[i].pos.x < posVels[j].pos.x:
@@ -51,20 +53,20 @@ proc applyGravity(posVels: var openArray[PosVel]) =
         posVels[j].vel.z.inc
     posVels[i].applyVelocity()
 
-proc calcEnergy(posVels: var openArray[PosVel]): int =
+proc calcEnergy(posVels: var openArray[PosVelRef]): int =
   for posVel in posVels:
     var
       pot: int
       kin: int
-    for val in posVel.pos.fields: pot.inc(abs(val))
-    for val in posVel.vel.fields: kin.inc(abs(val))
+    for val in posVel.pos[].fields: pot.inc(abs(val))
+    for val in posVel.vel[].fields: kin.inc(abs(val))
     result.inc(pot*kin)
 
-proc runTime(moons: openArray[Coord]; timeMax: int): int =
+proc runTime(moons: openArray[CoordRef]; timeMax: int): int =
   var
-    posVels: PosVelArr
-  for idx, moon in moons:
-    posVels[idx] = PosVel(pos: moon)
+    posVels: PosVelRefArr
+  for idx, moonPosRef in moons:
+    posVels[idx] = PosVelRef(pos: moonPosRef, vel: CoordRef())
 
   for t in 0 ..< timeMax:
     applyGravity(posVels)
@@ -78,24 +80,26 @@ proc runTime(moons: openArray[Coord]; timeMax: int): int =
   result = posVels.calcEnergy()
   echo &"total energy after {timeMax} time steps = {result}"
 
-proc timeToInitState(moons: openArray[Coord]): int =
+proc timeToInitState(moons: openArray[CoordRef]): int =
   result = 1
+  let
+    initMoonsPos = [moons[0][], moons[1][], moons[2][], moons[3][]]
   var
-    posVels: PosVelArr
-  for idx, moon in moons:
-    posVels[idx] = PosVel(pos: moon)
+    posVels: PosVelRefArr
+  for idx, moonPosRef in moons:
+    posVels[idx] = PosVelRef(pos: moonPosRef, vel: CoordRef())
 
   while true:
     applyGravity(posVels)
     var
       backToInit = true
-    backToInit = posVels[0].pos == moons[0]
+    backToInit = posVels[0].pos[] == initMoonsPos[0]
     if backToInit:
-      backToInit = posVels[1].pos == moons[1]
+      backToInit = posVels[1].pos[] == initMoonsPos[1]
       if backToInit:
-        backToInit = posVels[2].pos == moons[2]
+        backToInit = posVels[2].pos[] == initMoonsPos[2]
         if backToInit:
-          backToInit = posVels[3].pos == moons[3]
+          backToInit = posVels[3].pos[] == initMoonsPos[3]
     result.inc
     if backToInit:
       break
