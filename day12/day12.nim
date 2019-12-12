@@ -1,4 +1,4 @@
-import std/[strformat, strutils, strscans]
+import std/[strformat, strutils, strscans, math]
 import days_utils
 
 type
@@ -21,26 +21,32 @@ proc applyGravity(posVels: var seq[PosVel]) =
   for i in 0 .. posVels.high:
     if i < posVels.high:
       for j in i+1 .. posVels.high:
-        if posVels[i].pos.x < posVels[j].pos.x:
-          posVels[i].vel.x.inc
-          posVels[j].vel.x.dec
-        elif posVels[i].pos.x > posVels[j].pos.x:
-          posVels[i].vel.x.dec
-          posVels[j].vel.x.inc
+        if posVels[i].pos.x == posVels[j].pos.x:
+          discard
+        else:
+          let
+            ltInt = uint8(posVels[i].pos.x < posVels[j].pos.x)
+            incNum = -1.int8 ^ (ltInt - 1.uint8)
+          posVels[i].vel.x.inc(incNum)
+          posVels[j].vel.x.dec(incNum)
 
-        if posVels[i].pos.y < posVels[j].pos.y:
-          posVels[i].vel.y.inc
-          posVels[j].vel.y.dec
-        elif posVels[i].pos.y > posVels[j].pos.y:
-          posVels[i].vel.y.dec
-          posVels[j].vel.y.inc
+        if posVels[i].pos.y == posVels[j].pos.y:
+          discard
+        else:
+          let
+            ltInt = uint8(posVels[i].pos.y < posVels[j].pos.y)
+            incNum = -1.int8 ^ (ltInt - 1.uint8)
+          posVels[i].vel.y.inc(incNum)
+          posVels[j].vel.y.dec(incNum)
 
-        if posVels[i].pos.z < posVels[j].pos.z:
-          posVels[i].vel.z.inc
-          posVels[j].vel.z.dec
-        elif posVels[i].pos.z > posVels[j].pos.z:
-          posVels[i].vel.z.dec
-          posVels[j].vel.z.inc
+        if posVels[i].pos.z == posVels[j].pos.z:
+          discard
+        else:
+          let
+            ltInt = uint8(posVels[i].pos.z < posVels[j].pos.z)
+            incNum = -1.int8 ^ (ltInt - 1.uint8)
+          posVels[i].vel.z.inc(incNum)
+          posVels[j].vel.z.dec(incNum)
 
 proc applyVelocity(posVels: var seq[PosVel]) =
   for idx in 0 .. posVels.high:
