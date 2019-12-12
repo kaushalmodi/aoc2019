@@ -28,28 +28,27 @@ proc applyVelocity(posVel: var PosVel) =
 
 proc applyGravity(posVels: var openArray[PosVel]) =
   for i in 0 .. posVels.high:
-    if i < posVels.high:
-      for j in i+1 .. posVels.high:
-        if posVels[i].pos.x < posVels[j].pos.x:
-          posVels[i].vel.x.inc
-          posVels[j].vel.x.dec
-        elif posVels[i].pos.x > posVels[j].pos.x:
-          posVels[i].vel.x.dec
-          posVels[j].vel.x.inc
+    for j in i+1 .. posVels.high:
+      if posVels[i].pos.x < posVels[j].pos.x:
+        posVels[i].vel.x.inc
+        posVels[j].vel.x.dec
+      elif posVels[i].pos.x > posVels[j].pos.x:
+        posVels[i].vel.x.dec
+        posVels[j].vel.x.inc
 
-        if posVels[i].pos.y < posVels[j].pos.y:
-          posVels[i].vel.y.inc
-          posVels[j].vel.y.dec
-        elif posVels[i].pos.y > posVels[j].pos.y:
-          posVels[i].vel.y.dec
-          posVels[j].vel.y.inc
+      if posVels[i].pos.y < posVels[j].pos.y:
+        posVels[i].vel.y.inc
+        posVels[j].vel.y.dec
+      elif posVels[i].pos.y > posVels[j].pos.y:
+        posVels[i].vel.y.dec
+        posVels[j].vel.y.inc
 
-        if posVels[i].pos.z < posVels[j].pos.z:
-          posVels[i].vel.z.inc
-          posVels[j].vel.z.dec
-        elif posVels[i].pos.z > posVels[j].pos.z:
-          posVels[i].vel.z.dec
-          posVels[j].vel.z.inc
+      if posVels[i].pos.z < posVels[j].pos.z:
+        posVels[i].vel.z.inc
+        posVels[j].vel.z.dec
+      elif posVels[i].pos.z > posVels[j].pos.z:
+        posVels[i].vel.z.dec
+        posVels[j].vel.z.inc
     posVels[i].applyVelocity()
 
 proc calcEnergy(posVels: var openArray[PosVel]): int =
