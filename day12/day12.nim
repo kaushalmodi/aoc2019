@@ -17,6 +17,11 @@ proc parseCoords(fileName: string): seq[Coord] =
     result.add((0, 0, 0))
     discard scanf(moon, "<x=$i, y=$i, z=$i>", result[idx].x, result[idx].y, result[idx].z)
 
+proc applyVelocity(posVel: var PosVel) =
+  posVel.pos.x += posVel.vel.x
+  posVel.pos.y += posVel.vel.y
+  posVel.pos.z += posVel.vel.z
+
 proc applyGravity(posVels: var seq[PosVel]) =
   for i in 0 .. posVels.high:
     if i < posVels.high:
@@ -41,12 +46,7 @@ proc applyGravity(posVels: var seq[PosVel]) =
         elif posVels[i].pos.z > posVels[j].pos.z:
           posVels[i].vel.z.dec
           posVels[j].vel.z.inc
-
-proc applyVelocity(posVels: var seq[PosVel]) =
-  for idx in 0 .. posVels.high:
-    posVels[idx].pos.x += posVels[idx].vel.x
-    posVels[idx].pos.y += posVels[idx].vel.y
-    posVels[idx].pos.z += posVels[idx].vel.z
+    posVels[i].applyVelocity()
 
 proc calcEnergy(posVels: var seq[PosVel]): int =
   for posVel in posVels:
@@ -64,7 +64,6 @@ proc runTime(moons: seq[Coord]; timeMax: int): int =
     posVels[idx].pos = moon
   for t in 0 ..< timeMax:
     applyGravity(posVels)
-    applyVelocity(posVels)
     when defined(debug):
       for idx, posVel in posVels:
         if idx == 0:
@@ -84,7 +83,6 @@ proc timeToInitState(moons: seq[Coord]): int =
     posVels[idx].pos = moon
   while true:
     applyGravity(posVels)
-    applyVelocity(posVels)
     var
       backToInit = true
     for idx, moon in moons:
