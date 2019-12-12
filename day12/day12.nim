@@ -1,5 +1,4 @@
-import std/[strformat, strutils, strscans, math]
-# import std/[typetraits]
+import std/[strformat, strutils, strscans]
 import days_utils
 
 type
@@ -10,9 +9,6 @@ type
   PosVel = tuple
     pos: Coord
     vel: Coord
-
-# let
-#   numCoords = Coord.arity
 
 proc parseCoords(fileName: string): seq[Coord] =
   let
@@ -45,14 +41,6 @@ proc applyGravity(posVels: var seq[PosVel]) =
         elif posVels[i].pos.z > posVels[j].pos.z:
           posVels[i].vel.z.dec
           posVels[j].vel.z.inc
-        # for idx in 0 ..< numCoords: # Error: cannot evaluate at compile time: idx
-        #   if moons[i][idx] < moons[j][idx]:
-        #     result[i][idx].inc
-        #     result[j][idx].dec
-        #   elif moons[i][idx] > moons[j][idx]:
-        #     result[i][idx].dec
-        #     result[j][idx].inc
-  # echo &"vels = {result}"
 
 proc applyVelocity(posVels: var seq[PosVel]) =
   for idx in 0 .. posVels.high:
@@ -87,10 +75,30 @@ proc runTime(moons: seq[Coord]; timeMax: int): int =
   result = posVels.calcEnergy()
   echo &"total energy after {timeMax} time steps = {result}"
 
+proc timeToInitState(moons: seq[Coord]): int =
+  result = 1
+  var
+    posVels = newSeq[PosVel](moons.len)
+
+  for idx, moon in moons:
+    posVels[idx].pos = moon
+  while true:
+    applyGravity(posVels)
+    applyVelocity(posVels)
+    var
+      backToInit = true
+    for idx, moon in moons:
+      if posVels[idx].pos != moon:
+        backToInit = false
+        break
+    result.inc
+    if backToInit:
+      break
+
 when isMainModule:
   import std/[unittest]
 
-  suite "day12 tests":
+  suite "day12 part1 tests":
 
     test "example 1":
       check:
@@ -103,4 +111,23 @@ when isMainModule:
   suite "day12 part1 challenge":
     test "check":
       check:
-        "input.txt".parseCoords().runTime(1000) == 1940
+        "input.txt".parseCoords().runTime(1000) == 9127
+
+  suite "day12 part2 tests":
+
+    test "example 1":
+      check:
+        "example1.txt".parseCoords().timeToInitState() == 2772
+
+    # Thu Dec 12 08:34:46 EST 2019 - kmodi
+    # FIXME Commenting the below test until this code is optimized for speed.
+    # test "example 2":
+    #   check:
+    #     "example2.txt".parseCoords().timeToInitState() == 4686774924.int
+
+  # Thu Dec 12 08:34:46 EST 2019 - kmodi
+  # FIXME Commenting the below test until this code is optimized for speed.
+  # suite "day12 part2 challenge":
+  #   test "check":
+  #     check:
+  #       "input.txt".parseCoords().timeToInitState() == 4686774924.int
