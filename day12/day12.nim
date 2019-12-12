@@ -94,6 +94,9 @@ proc timeToInitState(moons: seq[Coord]): int =
     result.inc
     if backToInit:
       break
+    when defined(profile):
+      if result == 1_000_000:
+        break
 
 when isMainModule:
   import std/[unittest]
@@ -131,3 +134,7 @@ when isMainModule:
   #   test "check":
   #     check:
   #       "input.txt".parseCoords().timeToInitState() == 4686774924.int
+
+  when defined(profile):
+    echo "Running profiling proc .."
+    discard "example2.txt".parseCoords().timeToInitState()

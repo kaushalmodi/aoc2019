@@ -10,3 +10,4 @@ nim days
 #+begin_example
 nim days 1 2
 #+end_example
+**Note**: The [[https://github.com/sharkdp/hyperfine][~hyperfine~]] tool needs to be installed to run this task.
