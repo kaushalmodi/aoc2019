@@ -15,6 +15,12 @@ type
     jLeft = (-1, "left")
     jNeutral = (0, "nowhere")
     jRight = (1, "right")
+  DrawOut = ref object
+    state: ProcessOut
+    map: Table[Position, Tile]
+    score: int
+    ballPos: Position
+    paddlePos: Position
 
 proc render(map: Table[Position, Tile], xyMin: Position, xyMax: Position) =
   for y in xyMin.y .. xyMax.y:
@@ -29,22 +35,21 @@ proc render(map: Table[Position, Tile], xyMin: Position, xyMax: Position) =
       else: stdout.write(" ")
     echo ""
 
-proc draw(stateIn: var ProcessOut; inp = jNeutral): (Table[Position, Tile], ProcessOut, int) =
+proc draw(stateIn: var ProcessOut; inp = jNeutral): DrawOut =
+  result = DrawOut()
   let
     stateOut = stateIn.codes.process(@[inp.ord], stateIn.address, stateIn.relativeBase) # Run IntCode
   doAssert stateOut.outputs.len mod 3 == 0
   var
     xyMin: Position
     xyMax: Position
-    map: Table[Position, Tile]
-    score: int
   for i in countup(0, stateOut.outputs.high-2, 3):
     let
       pos = (stateOut.outputs[i], stateOut.outputs[i+1]).Position
       outp = stateOut.outputs[i+2]
     # echo &"{pos}, {outp}"
     if pos.x == -1 and pos.y == 0: # score
-      score = outp
+      result.score = outp
     else:
       doAssert pos.x >= 0 and pos.y >= 0
       xyMin = (min(xyMin.x, pos.x), min(xyMin.y, pos.y))
@@ -53,91 +58,73 @@ proc draw(stateIn: var ProcessOut; inp = jNeutral): (Table[Position, Tile], Proc
         tile = outp.Tile
         tileStr = $tile
       doAssert not tileStr.contains("(invalid data!)")
-      when defined(debug2):
-        case tile
-        of tPaddle:
+      case tile
+      of tPaddle:
+        result.paddlePos = pos
+        when defined(debug2):
           echo &"  {tile} position = {pos}"
-        of tBall:
+      of tBall:
+        result.ballPos = pos
+        when defined(debug2):
           echo &"  {tile} position = {pos}"
-        else:
-          discard
-      map[pos] = tile
-      # map.render(xyMin, xyMax)
+      else:
+        discard
+      result.map[pos] = tile
+      # result.map.render(xyMin, xyMax)
   when defined(debug2):
     echo &"xyMin = {xyMin}, xyMax = {xyMax}"
-  # map.render(xyMin, xyMax)
-  result = (map, stateOut, score)
-
-proc numRemainingBlocks(map: Table[Position, Tile]): int =
-  return toSeq(map.values).count(tBlock)
+  # result.map.render(xyMin, xyMax)
+  result.state = stateOut
 
 proc play(sw: seq[int]): int =
   var
     sw = sw # Make sw mutable
     initState: ProcessOut
-    paddlePos: Position
-    ballCurrPos: Position
     ballPrevPos: Position
+    s = DrawOut() # Initialize the DrawOut state variable
 
   sw[0] = 2 # 2 quarters
-  initState.address = 0
-  initState.relativeBase = 0
   initState.codes = sw
-  var
-    (map, state, score) = draw(initState, jLeft) # Initialize IntCode
-  for pos, tile in map.pairs:
-    case tile
-    of tBall:
-      ballPrevPos = pos
-    else:
-      discard
+
+  s = draw(initState, jLeft) # Initialize IntCode
+  ballPrevPos = s.ballPos
+
   while true:
     var
-      inp: Joystick
-    for pos, tile in map.pairs:
-      case tile
-      of tPaddle:
-        paddlePos = pos
-      of tBall:
-        ballCurrPos = pos
-      else:
-        discard
+      inp = jNeutral # Default input if none of the below if conditions match
     let
-      ballPaddleXDelta = abs(paddlePos.x-ballCurrPos.x)
-    if ballCurrPos.y > ballPrevPos.y: # the ball is coming down
-      let
-        ballFutureXTravel = paddlePos.y - ballCurrPos.y # because the ball is always traveling at 45 degree angle
-      if ballCurrPos.x < ballPrevPos.x: # ball is heading down towards the left
-        if ballCurrPos.x < paddlePos.x: # ball (heading down-left) to the left of paddle
-          inp = jLeft
-        elif ballCurrPos.x > paddlePos.x: # ball (heading down-left) to the right of paddle
-          if ballPaddleXDelta > ballFutureXTravel:
-            inp = jRight
-          elif ballPaddleXDelta < ballFutureXTravel:
-            inp = jLeft
-          else:
-            inp = jNeutral
+      ballPaddleXDelta = abs(s.paddlePos.x-s.ballPos.x)
 
-      elif ballCurrPos.x > ballPrevPos.x: # ball is heading down towards the right
-        if ballCurrPos.x < paddlePos.x: # ball (heading down-right) to the left of paddle
+    if s.ballPos.y > ballPrevPos.y: # the ball is coming down
+      let
+        ballFutureXTravel = s.paddlePos.y - s.ballPos.y # because the ball is always traveling at 45 degree angle
+      if s.ballPos.x < ballPrevPos.x: # ball is heading down towards the left
+        if s.ballPos.x < s.paddlePos.x: # ball (heading down-left) to the left of paddle
+          inp = jLeft
+        elif s.ballPos.x > s.paddlePos.x: # ball (heading down-left) to the right of paddle
+          if ballPaddleXDelta > ballFutureXTravel:
+            inp = jRight
+          elif ballPaddleXDelta < ballFutureXTravel:
+            inp = jLeft
+
+      elif s.ballPos.x > ballPrevPos.x: # ball is heading down towards the right
+        if s.ballPos.x < s.paddlePos.x: # ball (heading down-right) to the left of paddle
           if ballPaddleXDelta > ballFutureXTravel:
             inp = jLeft
           elif ballPaddleXDelta < ballFutureXTravel:
             inp = jRight
-          else:
-            inp = jNeutral
-        elif ballCurrPos.x > paddlePos.x: # ball (heading down-right) to the right of paddle
+        elif s.ballPos.x > s.paddlePos.x: # ball (heading down-right) to the right of paddle
           inp = jRight
 
       else:
         doAssert false, "the ball can never remain at the same X position"
 
-    elif ballCurrPos.y < ballPrevPos.y: # the ball is now going up
+    elif s.ballPos.y < ballPrevPos.y: # the ball is now going up
       # Just try to track the ball
-      if ballCurrPos.x < ballPrevPos.x: # ball is heading up towards the left
-        if ballCurrPos.x < paddlePos.x: # ball (heading up-left) to the left of paddle
+      if s.ballPos.x < ballPrevPos.x: # ball is heading up towards the left
+        if s.ballPos.x < s.paddlePos.x: # ball (heading up-left) to the left of paddle
           inp = jLeft
-        elif ballCurrPos.x > paddlePos.x: # ball (heading up-left) to the right of paddle
+        elif s.ballPos.x > s.paddlePos.x: # ball (heading up-left) to the right of paddle
           inp = jRight
         else:
           # At the moment the ball and paddle are at the same X coord,
@@ -145,10 +132,10 @@ proc play(sw: seq[int]): int =
           # to the left.
           inp = jLeft
 
-      elif ballCurrPos.x > ballPrevPos.x: # ball is heading up towards the right
-        if ballCurrPos.x < paddlePos.x: # ball (heading up-right) to the left of paddle
+      elif s.ballPos.x > ballPrevPos.x: # ball is heading up towards the right
+        if s.ballPos.x < s.paddlePos.x: # ball (heading up-right) to the left of paddle
           inp = jLeft
-        elif ballCurrPos.x > paddlePos.x: # ball (heading up-right) to the right of paddle
+        elif s.ballPos.x > s.paddlePos.x: # ball (heading up-right) to the right of paddle
           inp = jRight
         else:
           # At the moment the ball and paddle are at the same X coord,
@@ -159,20 +146,18 @@ proc play(sw: seq[int]): int =
       else:
         doAssert false, "the ball can never remain at the same X position"
 
-    else:
-      inp = jNeutral
     when defined(debug2):
-      echo &"ball {ballPrevPos}->{ballCurrPos}, paddle {paddlePos}, inp = {inp}"
+      echo &"ball {ballPrevPos}->{s.ballPos}, paddle {s.paddlePos}, inp = {inp}"
 
-    (map, state, score) = draw(state, inp)
-    if state.address == -1:
-      if score > 0:
-        echo &"You won! :D  (score = {score})"
-        result = score
+    ballPrevPos = s.ballPos
+    s = draw(s.state, inp)
+    if s.state.address == -1:
+      if s.score > 0:
+        echo &"You won! :D  (score = {s.score})"
+        result = s.score
       else:
         echo &"You lost :("
       break
-    ballPrevPos = ballCurrPos
 
 when isMainModule:
   import std/[unittest]
@@ -186,10 +171,10 @@ when isMainModule:
         initState: ProcessOut
       initState.codes = sw
       let
-        arcadeOut = draw(initState)
+        s = draw(initState)
     test "check":
       check:
-        arcadeOut[0].numRemainingBlocks() == 412
+        toSeq(s.map.values).count(tBlock) == 412
 
   suite "day13 part2 challenge":
     setup:
