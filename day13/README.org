@@ -2,7 +2,8 @@
 
 [[https://adventofcode.com/2019/day/13][https://adventofcode.com/2019/day/13]]
 
-* Game Tile Rendering
-#+begin_example
-nim c -d:release -d:render -r nim13
-#+end_example
+* Game Play Animation
+#+begin_src shell
+# cd to this directory
+nim play
+#+end_src shell

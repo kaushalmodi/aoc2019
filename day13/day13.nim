@@ -1,7 +1,12 @@
 import std/[strformat, strutils, tables, sequtils]
 when defined(render):
-  import std/[terminal]
+  import std/[os, terminal]
 import day02 # intcode
+
+when defined(render):
+  const
+    canvasWidth = 44
+    canvasHeight = 24
 
 type
   Position = tuple
@@ -29,19 +34,23 @@ type
 
 when defined(render):
   proc render(map: Map; s: DrawOut) =
-    stdout.hideCursor()
     for y in map.xyMin.y .. map.xyMax.y:
       for x in map.xyMin.x .. map.xyMax.x:
         let
           tile = map.tiles.getOrDefault((x, y))
         case tile
-        of tWall: stdout.write("#")
-        of tBlock: stdout.write("█")
-        of tPaddle: stdout.write("_")
-        of tBall: stdout.write("O")
+        of tWall: stdout.write("█")
+        of tBlock: stdout.write("░")
+        of tPaddle: stdout.write("▂")
+        of tBall: stdout.write("✪")
         else: stdout.write(" ")
       echo ""
-    stdout.showCursor()
+
+    # Move cursor back to top-left of the canvas.
+    stdout.cursorUp(canvasHeight)
+    stdout.cursorBackward(canvasWidth)
+
+    sleep(10)
 
 proc draw(map: var Map; stateIn: var ProcessOut; inp = jNeutral): DrawOut =
   result = DrawOut()
@@ -87,16 +96,24 @@ proc play(sw: seq[int]): int =
     map = Map()
     s = map.draw(sw, 2) # Initialize IntCode, put in 2 quarters
 
+  when defined(render):
+    stdout.hideCursor()
+
   while true:
     s = map.draw(s.state, cmp(s.ballPos.x, s.paddlePos.x).Joystick)
-
     if s.state.address == -1:
-      if s.score > 0:
-        echo &"You won! :D  (score = {s.score})"
-        result = s.score
-      else:
-        echo &"You lost :("
       break
+
+  when defined(render):
+    stdout.cursorDown(canvasHeight)
+    stdout.showCursor()
+    echo ""
+
+  if s.score > 0:
+    echo &"You won! :D  (score = {s.score})"
+    result = s.score
+  else:
+    echo &"You lost :("
 
 when isMainModule:
   import std/[unittest]
@@ -106,8 +123,7 @@ when isMainModule:
     setup:
       var
         map = Map()
-      let
-        s = map.draw("input.txt".readFileToIntSeq())
+      discard map.draw("input.txt".readFileToIntSeq())
 
     test "check":
       check:
@@ -117,6 +133,6 @@ when isMainModule:
     setup:
       let
         score = "input.txt".readFileToIntSeq().play()
-    test "check":
+    test "play":
       check:
         score == 20940
