@@ -24,18 +24,19 @@ type
     ballPos: Position
     paddlePos: Position
 
-proc render(s: DrawOut) =
-  for y in s.xyMin.y .. s.xyMax.y:
-    for x in s.xyMin.x .. s.xyMax.x:
-      let
-        tile = s.map.getOrDefault((x, y))
-      case tile
-      of tWall: stdout.write("#")
-      of tBlock: stdout.write("█")
-      of tPaddle: stdout.write("_")
-      of tBall: stdout.write("O")
-      else: stdout.write(" ")
-    echo ""
+when defined(render):
+  proc render(s: DrawOut) =
+    for y in s.xyMin.y .. s.xyMax.y:
+      for x in s.xyMin.x .. s.xyMax.x:
+        let
+          tile = s.map.getOrDefault((x, y))
+        case tile
+        of tWall: stdout.write("#")
+        of tBlock: stdout.write("█")
+        of tPaddle: stdout.write("_")
+        of tBall: stdout.write("O")
+        else: stdout.write(" ")
+      echo ""
 
 proc draw(stateIn: var ProcessOut; inp = jNeutral): DrawOut =
   result = DrawOut()
@@ -46,43 +47,37 @@ proc draw(stateIn: var ProcessOut; inp = jNeutral): DrawOut =
     let
       pos = (stateOut.outputs[i], stateOut.outputs[i+1]).Position
       outp = stateOut.outputs[i+2]
-    # echo &"{pos}, {outp}"
     if pos.x == -1 and pos.y == 0: # score
       result.score = outp
     else:
       doAssert pos.x >= 0 and pos.y >= 0
-      result.xyMin = (min(result.xyMin.x, pos.x), min(result.xyMin.y, pos.y))
-      result.xyMax = (max(result.xyMax.x, pos.x), max(result.xyMax.y, pos.y))
+      when defined(render):
+        result.xyMin = (min(result.xyMin.x, pos.x), min(result.xyMin.y, pos.y))
+        result.xyMax = (max(result.xyMax.x, pos.x), max(result.xyMax.y, pos.y))
       let
         tile = outp.Tile
         tileStr = $tile
       doAssert not tileStr.contains("(invalid data!)")
       case tile
-      of tPaddle:
-        result.paddlePos = pos
-        when defined(debug2):
-          echo &"  {tile} position = {pos}"
-      of tBall:
-        result.ballPos = pos
-        when defined(debug2):
-          echo &"  {tile} position = {pos}"
-      else:
-        discard
+      of tPaddle: result.paddlePos = pos
+      of tBall: result.ballPos = pos
+      else: discard
       result.map[pos] = tile
-  when defined(debug2):
-    echo &"result.xyMin = {result.xyMin}, result.xyMax = {result.xyMax}"
   result.state = stateOut
+
+proc draw(codes: seq[int]; mem0 = -1): DrawOut =
+  var
+    codes = codes # Make codes mutable
+  if mem0 != -1:
+    codes[0] = mem0
+  var
+    state: ProcessOut
+  state.codes = codes
+  result = state.draw()
 
 proc play(sw: seq[int]): int =
   var
-    sw = sw # Make sw mutable
-    initState: ProcessOut
-    s = DrawOut() # Initialize the DrawOut state variable
-
-  sw[0] = 2 # 2 quarters
-  initState.codes = sw
-
-  s = draw(initState, jLeft) # Initialize IntCode
+    s = sw.draw(2) # Initialize IntCode, put in 2 quarters
 
   while true:
     s = draw(s.state, cmp(s.ballPos.x, s.paddlePos.x).Joystick)
@@ -101,12 +96,7 @@ when isMainModule:
   suite "day13 part1 challenge":
     setup:
       let
-        sw = "input.txt".readFileToIntSeq()
-      var
-        initState: ProcessOut
-      initState.codes = sw
-      let
-        s = draw(initState)
+        s = "input.txt".readFileToIntSeq().draw()
       when defined(render):
         s.render()
 
