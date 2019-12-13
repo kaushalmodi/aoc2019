@@ -82,7 +82,7 @@ proc parseCode*(code: int): Code =
 var
   id = -1
 
-proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0, initialRelativeBase = 0; quiet = false): ProcessOut =
+proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0, initialRelativeBase = 0): ProcessOut =
   var
     memory: Table[int, int]
     address = initialAddress
@@ -191,7 +191,7 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
       when defined(debug):
         echo &"  new relative base = {oldRelativeBase} + {params[0]} = {relativeBase}"
     of opHalt:
-      if not quiet:
+      when defined(debug):
         echo &"[{address}] Quitting .."
       for i in 0 ..< maxAddress:
         result.codes.add(memory.getOrDefault(i))
@@ -244,7 +244,7 @@ when isMainModule:
       codes[1] = noun
     if verb in {0 .. 99}:
       codes[2] = verb
-    codes = codes.process(quiet = true).codes
+    codes = codes.process().codes
     when defined(debug):
       echo &"value at position 0: {codes[0]}"
     return codes[0]
