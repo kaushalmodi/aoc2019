@@ -18,15 +18,17 @@ type
   DrawOut = ref object
     state: ProcessOut
     map: Table[Position, Tile]
+    xyMin: Position
+    xyMax: Position
     score: int
     ballPos: Position
     paddlePos: Position
 
-proc render(map: Table[Position, Tile], xyMin: Position, xyMax: Position) =
-  for y in xyMin.y .. xyMax.y:
-    for x in xyMin.x .. xyMax.x:
+proc render(s: DrawOut) =
+  for y in s.xyMin.y .. s.xyMax.y:
+    for x in s.xyMin.x .. s.xyMax.x:
       let
-        tile = map.getOrDefault((x, y))
+        tile = s.map.getOrDefault((x, y))
       case tile
       of tWall: stdout.write("#")
       of tBlock: stdout.write("█")
@@ -40,9 +42,6 @@ proc draw(stateIn: var ProcessOut; inp = jNeutral): DrawOut =
   let
     stateOut = stateIn.codes.process(@[inp.ord], stateIn.address, stateIn.relativeBase) # Run IntCode
   doAssert stateOut.outputs.len mod 3 == 0
-  var
-    xyMin: Position
-    xyMax: Position
   for i in countup(0, stateOut.outputs.high-2, 3):
     let
       pos = (stateOut.outputs[i], stateOut.outputs[i+1]).Position
@@ -52,8 +51,8 @@ proc draw(stateIn: var ProcessOut; inp = jNeutral): DrawOut =
       result.score = outp
     else:
       doAssert pos.x >= 0 and pos.y >= 0
-      xyMin = (min(xyMin.x, pos.x), min(xyMin.y, pos.y))
-      xyMax = (max(xyMax.x, pos.x), max(xyMax.y, pos.y))
+      result.xyMin = (min(result.xyMin.x, pos.x), min(result.xyMin.y, pos.y))
+      result.xyMax = (max(result.xyMax.x, pos.x), max(result.xyMax.y, pos.y))
       let
         tile = outp.Tile
         tileStr = $tile
@@ -70,10 +69,8 @@ proc draw(stateIn: var ProcessOut; inp = jNeutral): DrawOut =
       else:
         discard
       result.map[pos] = tile
-      # result.map.render(xyMin, xyMax)
   when defined(debug2):
-    echo &"xyMin = {xyMin}, xyMax = {xyMax}"
-  # result.map.render(xyMin, xyMax)
+    echo &"result.xyMin = {result.xyMin}, result.xyMax = {result.xyMax}"
   result.state = stateOut
 
 proc play(sw: seq[int]): int =
@@ -172,6 +169,9 @@ when isMainModule:
       initState.codes = sw
       let
         s = draw(initState)
+      when defined(render):
+        s.render()
+
     test "check":
       check:
         toSeq(s.map.values).count(tBlock) == 412
