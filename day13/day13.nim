@@ -77,77 +77,15 @@ proc play(sw: seq[int]): int =
   var
     sw = sw # Make sw mutable
     initState: ProcessOut
-    ballPrevPos: Position
     s = DrawOut() # Initialize the DrawOut state variable
 
   sw[0] = 2 # 2 quarters
   initState.codes = sw
 
   s = draw(initState, jLeft) # Initialize IntCode
-  ballPrevPos = s.ballPos
 
   while true:
-    var
-      inp = jNeutral # Default input if none of the below if conditions match
-    let
-      ballPaddleXDelta = abs(s.paddlePos.x-s.ballPos.x)
-
-    if s.ballPos.y > ballPrevPos.y: # the ball is coming down
-      let
-        ballFutureXTravel = s.paddlePos.y - s.ballPos.y # because the ball is always traveling at 45 degree angle
-      if s.ballPos.x < ballPrevPos.x: # ball is heading down towards the left
-        if s.ballPos.x < s.paddlePos.x: # ball (heading down-left) to the left of paddle
-          inp = jLeft
-        elif s.ballPos.x > s.paddlePos.x: # ball (heading down-left) to the right of paddle
-          if ballPaddleXDelta > ballFutureXTravel:
-            inp = jRight
-          elif ballPaddleXDelta < ballFutureXTravel:
-            inp = jLeft
-
-      elif s.ballPos.x > ballPrevPos.x: # ball is heading down towards the right
-        if s.ballPos.x < s.paddlePos.x: # ball (heading down-right) to the left of paddle
-          if ballPaddleXDelta > ballFutureXTravel:
-            inp = jLeft
-          elif ballPaddleXDelta < ballFutureXTravel:
-            inp = jRight
-        elif s.ballPos.x > s.paddlePos.x: # ball (heading down-right) to the right of paddle
-          inp = jRight
-
-      else:
-        doAssert false, "the ball can never remain at the same X position"
-
-    elif s.ballPos.y < ballPrevPos.y: # the ball is now going up
-      # Just try to track the ball
-      if s.ballPos.x < ballPrevPos.x: # ball is heading up towards the left
-        if s.ballPos.x < s.paddlePos.x: # ball (heading up-left) to the left of paddle
-          inp = jLeft
-        elif s.ballPos.x > s.paddlePos.x: # ball (heading up-left) to the right of paddle
-          inp = jRight
-        else:
-          # At the moment the ball and paddle are at the same X coord,
-          # but it is heading left by inertia. So move the paddle by 1
-          # to the left.
-          inp = jLeft
-
-      elif s.ballPos.x > ballPrevPos.x: # ball is heading up towards the right
-        if s.ballPos.x < s.paddlePos.x: # ball (heading up-right) to the left of paddle
-          inp = jLeft
-        elif s.ballPos.x > s.paddlePos.x: # ball (heading up-right) to the right of paddle
-          inp = jRight
-        else:
-          # At the moment the ball and paddle are at the same X coord,
-          # but it is heading right by inertia. So move the paddle by 1
-          # to the right.
-          inp = jRight
-
-      else:
-        doAssert false, "the ball can never remain at the same X position"
-
-    when defined(debug2):
-      echo &"ball {ballPrevPos}->{s.ballPos}, paddle {s.paddlePos}, inp = {inp}"
-
-    ballPrevPos = s.ballPos
-    s = draw(s.state, inp)
+    s = draw(s.state, cmp(s.ballPos.x, s.paddlePos.x).Joystick)
     if s.state.address == -1:
       if s.score > 0:
         echo &"You won! :D  (score = {s.score})"
