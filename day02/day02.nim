@@ -141,16 +141,13 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
     of opMul:
       params[outParamIdx] = params[0] * params[1]
     of opInput:
-      if inputs.len == 0:
-        stdout.write "User Input? "
-        params[outParamIdx] = stdin.readLine().parseInt()
+      if inputIdx < inputs.high:
+        inputIdx.inc
+        params[outParamIdx] = inputs[inputIdx]
+        when defined(debug):
+          echo &"-> {params[outParamIdx]}"
       else:
-        if inputIdx < inputs.high:
-          inputIdx.inc
-          params[outParamIdx] = inputs[inputIdx]
-          when defined(debug):
-            echo &"-> {params[outParamIdx]}"
-        else:
+        when not defined(userinp):
           # If the input queue is empty, return.  The saved state of
           # the current address (instruction pointer) and the modified
           # code are part of the returned data for future restore.
@@ -159,6 +156,9 @@ proc process*(codes: openArray[int]; inputs: seq[int] = @[]; initialAddress = 0,
           when defined(debug):
             echo "Input queue empty, returning .."
           return
+        else:
+          stdout.write "User Input? "
+          params[outParamIdx] = stdin.readLine().parseInt()
     of opOutput:
       result.outputs.add(params[0])
       when defined(debug):
