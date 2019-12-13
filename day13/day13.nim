@@ -32,26 +32,6 @@ type
     ballPos: Position
     paddlePos: Position
 
-when defined(render):
-  proc render(map: Map; s: DrawOut) =
-    for y in map.xyMin.y .. map.xyMax.y:
-      for x in map.xyMin.x .. map.xyMax.x:
-        let
-          tile = map.tiles.getOrDefault((x, y))
-        case tile
-        of tWall: stdout.write("█")
-        of tBlock: stdout.write("░")
-        of tPaddle: stdout.write("▂")
-        of tBall: stdout.write("✪")
-        else: stdout.write(" ")
-      echo ""
-
-    # Move cursor back to top-left of the canvas.
-    stdout.cursorUp(canvasHeight)
-    stdout.cursorBackward(canvasWidth)
-
-    sleep(10)
-
 proc draw(map: var Map; stateIn: var ProcessOut; inp = jNeutral): DrawOut =
   result = DrawOut()
   let
@@ -77,8 +57,6 @@ proc draw(map: var Map; stateIn: var ProcessOut; inp = jNeutral): DrawOut =
       of tBall: result.ballPos = pos
       else: discard
       map.tiles[pos] = tile
-  when defined(render):
-    map.render(result)
   result.state = stateOut
 
 proc draw(map: var Map; codes: seq[int]; mem0 = -1): DrawOut =
@@ -91,17 +69,41 @@ proc draw(map: var Map; codes: seq[int]; mem0 = -1): DrawOut =
   state.codes = codes
   result = map.draw(state)
 
+when defined(render):
+  proc render(map: Map) =
+    for y in map.xyMin.y .. map.xyMax.y:
+      for x in map.xyMin.x .. map.xyMax.x:
+        let
+          tile = map.tiles.getOrDefault((x, y))
+        case tile
+        of tWall: stdout.write("█")
+        of tBlock: stdout.write("░")
+        of tPaddle: stdout.write("▂")
+        of tBall: stdout.write("✪")
+        else: stdout.write(" ")
+      echo ""
+
+    # Move cursor back to top-left of the canvas.
+    stdout.cursorUp(canvasHeight)
+    stdout.cursorBackward(canvasWidth)
+
+    sleep(10)
+
 proc play(sw: seq[int]): int =
   var
     map = Map()
-    s = map.draw(sw, 2) # Initialize IntCode, put in 2 quarters
+    d = map.draw(sw, 2) # Initialize IntCode, put in 2 quarters
 
   when defined(render):
     stdout.hideCursor()
 
   while true:
-    s = map.draw(s.state, cmp(s.ballPos.x, s.paddlePos.x).Joystick)
-    if s.state.address == -1:
+    d = map.draw(d.state, cmp(d.ballPos.x, d.paddlePos.x).Joystick)
+
+    when defined(render):
+      map.render()
+
+    if d.state.address == -1:
       break
 
   when defined(render):
@@ -109,9 +111,9 @@ proc play(sw: seq[int]): int =
     stdout.showCursor()
     echo ""
 
-  if s.score > 0:
-    echo &"You won! :D  (score = {s.score})"
-    result = s.score
+  if d.score > 0:
+    echo &"You won! :D  (score = {d.score})"
+    result = d.score
   else:
     echo &"You lost :("
 
@@ -130,9 +132,6 @@ when isMainModule:
         toSeq(map.tiles.values).count(tBlock) == 412
 
   suite "day13 part2 challenge":
-    setup:
-      let
-        score = "input.txt".readFileToIntSeq().play()
     test "play":
       check:
-        score == 20940
+        "input.txt".readFileToIntSeq().play() == 20940
