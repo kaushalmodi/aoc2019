@@ -1,4 +1,6 @@
 import std/[strformat, strutils, tables, sequtils]
+when defined(render):
+  import std/[terminal]
 import day02 # intcode
 
 type
@@ -15,21 +17,23 @@ type
     jLeft = (-1, "left")
     jNeutral = (0, "nowhere")
     jRight = (1, "right")
-  DrawOut = ref object
-    state: ProcessOut
-    map: Table[Position, Tile]
+  Map = ref object
+    tiles: Table[Position, Tile]
     xyMin: Position
     xyMax: Position
+  DrawOut = ref object
+    state: ProcessOut
     score: int
     ballPos: Position
     paddlePos: Position
 
 when defined(render):
-  proc render(s: DrawOut) =
-    for y in s.xyMin.y .. s.xyMax.y:
-      for x in s.xyMin.x .. s.xyMax.x:
+  proc render(map: Map; s: DrawOut) =
+    stdout.hideCursor()
+    for y in map.xyMin.y .. map.xyMax.y:
+      for x in map.xyMin.x .. map.xyMax.x:
         let
-          tile = s.map.getOrDefault((x, y))
+          tile = map.tiles.getOrDefault((x, y))
         case tile
         of tWall: stdout.write("#")
         of tBlock: stdout.write("█")
@@ -37,8 +41,9 @@ when defined(render):
         of tBall: stdout.write("O")
         else: stdout.write(" ")
       echo ""
+    stdout.showCursor()
 
-proc draw(stateIn: var ProcessOut; inp = jNeutral): DrawOut =
+proc draw(map: var Map; stateIn: var ProcessOut; inp = jNeutral): DrawOut =
   result = DrawOut()
   let
     stateOut = stateIn.codes.process(@[inp.ord], stateIn.address, stateIn.relativeBase) # Run IntCode
@@ -52,8 +57,8 @@ proc draw(stateIn: var ProcessOut; inp = jNeutral): DrawOut =
     else:
       doAssert pos.x >= 0 and pos.y >= 0
       when defined(render):
-        result.xyMin = (min(result.xyMin.x, pos.x), min(result.xyMin.y, pos.y))
-        result.xyMax = (max(result.xyMax.x, pos.x), max(result.xyMax.y, pos.y))
+        map.xyMin = (min(map.xyMin.x, pos.x), min(map.xyMin.y, pos.y))
+        map.xyMax = (max(map.xyMax.x, pos.x), max(map.xyMax.y, pos.y))
       let
         tile = outp.Tile
         tileStr = $tile
@@ -62,10 +67,12 @@ proc draw(stateIn: var ProcessOut; inp = jNeutral): DrawOut =
       of tPaddle: result.paddlePos = pos
       of tBall: result.ballPos = pos
       else: discard
-      result.map[pos] = tile
+      map.tiles[pos] = tile
+  when defined(render):
+    map.render(result)
   result.state = stateOut
 
-proc draw(codes: seq[int]; mem0 = -1): DrawOut =
+proc draw(map: var Map; codes: seq[int]; mem0 = -1): DrawOut =
   var
     codes = codes # Make codes mutable
   if mem0 != -1:
@@ -73,14 +80,16 @@ proc draw(codes: seq[int]; mem0 = -1): DrawOut =
   var
     state: ProcessOut
   state.codes = codes
-  result = state.draw()
+  result = map.draw(state)
 
 proc play(sw: seq[int]): int =
   var
-    s = sw.draw(2) # Initialize IntCode, put in 2 quarters
+    map = Map()
+    s = map.draw(sw, 2) # Initialize IntCode, put in 2 quarters
 
   while true:
-    s = draw(s.state, cmp(s.ballPos.x, s.paddlePos.x).Joystick)
+    s = map.draw(s.state, cmp(s.ballPos.x, s.paddlePos.x).Joystick)
+
     if s.state.address == -1:
       if s.score > 0:
         echo &"You won! :D  (score = {s.score})"
@@ -95,14 +104,14 @@ when isMainModule:
 
   suite "day13 part1 challenge":
     setup:
+      var
+        map = Map()
       let
-        s = "input.txt".readFileToIntSeq().draw()
-      when defined(render):
-        s.render()
+        s = map.draw("input.txt".readFileToIntSeq())
 
     test "check":
       check:
-        toSeq(s.map.values).count(tBlock) == 412
+        toSeq(map.tiles.values).count(tBlock) == 412
 
   suite "day13 part2 challenge":
     setup:
