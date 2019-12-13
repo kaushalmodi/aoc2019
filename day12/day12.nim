@@ -1,111 +1,66 @@
-import std/[strformat, strutils, strscans, math]
+import std/[strformat, strutils, strscans, math, sequtils]
 import days_utils
 
 const
+  numAxes = 3
   numMoons = 4
 
 type
-  Coord = object
-    x: int
-    y: int
-    z: int
-  CoordArr = array[numMoons, Coord]
-  PosVel = object
-    pos: Coord
-    vel: Coord
-  PosVelAxis = object
-    pos: int
-    vel: int
-  PosVelArr = array[numMoons, PosVel]
+  Coord1Arr = array[numMoons, int] # an array of values of the same coordinate for all moons
+  Coord3Arr = array[numAxes, Coord1Arr] # an array of Coord1Arr elements, one for each of X, Y, Z
 
-const
-  zeroVelocity = Coord(x: 0, y: 0, z: 0)
-
-proc parseCoords(fileName: string): CoordArr =
+proc parseCoords(fileName: string): Coord3Arr =
   let
-    moons = fileName.prjDir().readFile().strip().splitLines()
-  for idx, moon in moons:
+    posSeq = fileName.prjDir().readFile().strip().splitLines()
+  for i, pos in posSeq:
     var
-      x, y, z: int
-    discard scanf(moon, "<x=$i, y=$i, z=$i>", x, y, z)
-    result[idx] = Coord(x: x, y: y, z: z)
+      axes: array[numAxes, int]
+    discard scanf(pos, "<x=$i, y=$i, z=$i>", axes[0], axes[1], axes[2])
+    for j, axis in axes:
+      result[j][i] = axis
 
-proc updatePosVel(posVelsAxis: var openArray[PosVelAxis]) =
-  for i in 0 .. posVelsAxis.high:
-    # Update velocity.
-    for j in i+1 .. posVelsAxis.high:
-      if posVelsAxis[i].pos < posVelsAxis[j].pos:
-        posVelsAxis[i].vel.inc
-        posVelsAxis[j].vel.dec
-      elif posVelsAxis[i].pos > posVelsAxis[j].pos:
-        posVelsAxis[i].vel.dec
-        posVelsAxis[j].vel.inc
+proc updatePosVel(posz: var Coord1Arr, velz: var Coord1Arr) =
+  for i in 0 .. posz.high:
+    for j in i+1 .. posz.high:
+      let
+        moonICloser = -cmp(posz[i], posz[j])
+      # Update velocity.
+      velz[i].inc(moonICloser); velz[j].inc(-moonICloser)
     # Update position.
-    posVelsAxis[i].pos.inc(posVelsAxis[i].vel)
+    posz[i].inc(velz[i])
 
-proc posVelsToPosVelsAxes(posVels: var openArray[PosVel]): seq[seq[PosVelAxis]] =
-  var
-    posVelX: seq[PosVelAxis]
-    posVelY: seq[PosVelAxis]
-    posVelZ: seq[PosVelAxis]
-  for i in 0 ..< numMoons:
-    posVelX.add(PosVelAxis(pos: posVels[i].pos.x, vel: posVels[i].vel.x))
-    posVelY.add(PosVelAxis(pos: posVels[i].pos.y, vel: posVels[i].vel.y))
-    posVelZ.add(PosVelAxis(pos: posVels[i].pos.z, vel: posVels[i].vel.z))
-  return @[posVelX, posVelY, posVelZ]
-
-proc updatePosVel(posVels: var openArray[PosVel]): seq[seq[PosVelAxis]] =
-  result = posVels.posVelsToPosVelsAxes()
-  result[0].updatePosVel() # X
-  result[1].updatePosVel() # Y
-  result[2].updatePosVel() # Z
-
-  # Update back posVels
-  for i in 0 ..< numMoons:
-    posVels[i].pos.x = result[0][i].pos; posVels[i].vel.x = result[0][i].vel
-    posVels[i].pos.y = result[1][i].pos; posVels[i].vel.y = result[1][i].vel
-    posVels[i].pos.z = result[2][i].pos; posVels[i].vel.z = result[2][i].vel
-
-proc calcEnergy(posVelsAxes: openArray[seq[PosVelAxis]]): int =
-  for i in 0 ..< numMoons:
+proc calcEnergy(posz: var Coord3Arr, velz: var Coord3Arr): array[numMoons, int] =
+  for m in 0 ..< numMoons:
     var
-      pot: int
-      kin: int
-    for j in 0 ..< 3: # We have 3 axes X, Y, Z
+      pot, kin: array[numMoons, int]
+    for axis in 0 ..< numAxes:
       # Potential energy
-      pot.inc(abs(posVelsAxes[j][i].pos))
+      pot[m].inc(abs(posz[axis][m]))
       # Kinetic energy
-      kin.inc(abs(posVelsAxes[j][i].vel))
-    result.inc(pot*kin)
+      kin[m].inc(abs(velz[axis][m]))
+    result[m] = pot[m]*kin[m]
 
-proc runTime(moons: openArray[Coord]; timeMax: int): int =
+proc runForTime(posz: var Coord3Arr; timeMax: int): int =
   var
-    posVels: PosVelArr
-    posVelsAxes: seq[seq[PosVelAxis]]
-  for idx, moon in moons:
-    posVels[idx] = PosVel(pos: moon, vel: zeroVelocity)
-
+    velz: Coord3Arr
   for t in 0 ..< timeMax:
-    posVelsAxes = updatePosVel(posVels)
+    for axis in 0 ..< numAxes:
+      updatePosVel(posz[axis], velz[axis])
     when defined(debug):
-      for idx, posVel in posVels:
-        if idx == 0:
-          echo &"[{t:>4}] pos = {posVel.pos}, vel = {posVel.vel}"
+      for i in 0 ..< numMoons:
+        if i == 0:
+          echo &"[{t:>4}] pos = ({posz[0][i]}, {posz[1][i]}, {posz[2][i]}), vel = ({velz[0][i]}, {velz[1][i]}, {velz[2][i]})"
         else:
-          echo &"       pos = {posVel.pos}, vel = {posVel.vel}"
+          echo &"       pos = ({posz[0][i]}, {posz[1][i]}, {posz[2][i]}), vel = ({velz[0][i]}, {velz[1][i]}, {velz[2][i]})"
       echo ""
-  result = posVelsAxes.calcEnergy()
+  result = calcEnergy(posz, velz).foldl(a+b)
   echo &"total energy after {timeMax} time steps = {result}"
 
-proc timeToInitState(moons: openArray[Coord]): int =
+proc timeToInitState(posz: var Coord3Arr): int =
   result = 1
   var
-    posVels: PosVelArr
-    timeToInit: array[3, int] # 3 for 3 axes
-  for idx, moon in moons:
-    posVels[idx] = PosVel(pos: moon)
-  var
-    posVelsAxes = posVels.posVelsToPosVelsAxes()
+    velz: Coord3Arr
+    timeToInit: array[numAxes, int]
 
   # As the calculation for each axis independent of other axes, the pos/vel can be calculated
   # independently. The answer is "just an LCM" of the times takes for each of
@@ -126,53 +81,62 @@ proc timeToInitState(moons: openArray[Coord]): int =
   # - https://www.reddit.com/r/adventofcode/comments/e9j0ve/2019_day_12_solutions/fakf7lb
   # - https://github.com/AxlLind/AdventOfCode2019/blob/master/src/bin/12-bonus.rs
   # - Above diagram: https://www.reddit.com/r/adventofcode/comments/e9tjel/2019_day_12_2_c_need_an_satisfactory_explanation/
-  for i in 0 ..< 3:
+  for axis in 0 ..< numAxes:
     while true:
-      posVelsAxes[i].updatePosVel()
+      updatePosVel(posz[axis], velz[axis])
       # Tip to just check when the velocity becomes zero once again
       # and just multiplying that by 2 to get the time for the moon to
       # get back to the init position comes from:
       # - https://www.reddit.com/r/adventofcode/comments/e9nqpq/day_12_part_2_2x_faster_solution/
       # - https://github.com/wborgeaud/adventofcode2019-rust-python/blob/29c8a820cda5b92f9e579184f04c828b60b09225/Day-12/sol/src/main.rs#L125
       var
-        velBackToZero = posVelsAxes[i][0].vel == 0
-      for j in 1 ..< numMoons:
+        velBackToZero = velz[axis][0] == 0
+      for m in 1 ..< numMoons:
         if velBackToZero:
-          velBackToZero = posVelsAxes[i][j].vel == 0
-      timeToInit[i].inc
+          velBackToZero = velz[axis][m] == 0
+      timeToInit[axis].inc
       if velBackToZero:
         break
-  result = 2*timeToInit[0].lcm(timeToInit[1]).lcm(timeToInit[2])
+  result = 2*lcm(timeToInit) # Do an LCM of timeToInit for all axes
 
 when isMainModule:
   import std/[unittest]
 
-  suite "day12 part1 tests":
+  suite "day12 example 1 tests":
+    setup:
+      var
+        posz = "example1.txt".parseCoords()
 
-    test "example 1":
+    test "example 1 part 1":
       check:
-        "example1.txt".parseCoords().runTime(10) == 179
+        posz.runForTime(10) == 179
 
-    test "example 2":
+    test "example 1 part 2":
       check:
-        "example2.txt".parseCoords().runTime(100) == 1940
+        posz.timeToInitState() == 2772
 
-  suite "day12 part1 challenge":
-    test "check":
+  suite "day12 example 2 tests":
+    setup:
+      var
+        posz = "example2.txt".parseCoords()
+
+    test "example 2 part 1":
       check:
-        "input.txt".parseCoords().runTime(1000) == 9127
+        posz.runForTime(100) == 1940
 
-  suite "day12 part2 tests":
-
-    test "example 1":
+    test "example 2 part 2":
       check:
-        "example1.txt".parseCoords().timeToInitState() == 2772
+        posz.timeToInitState() == 4686774924.int
 
-    test "example 2":
-      check:
-        "example2.txt".parseCoords().timeToInitState() == 4686774924.int
+  suite "day12 challenges":
+    setup:
+      var
+        posz = "input.txt".parseCoords()
 
-  suite "day12 part2 challenge":
-    test "check":
+    test "part1":
       check:
-        "input.txt".parseCoords().timeToInitState() == 353620566035124.int
+        posz.runForTime(1000) == 9127
+
+    test "part2":
+      check:
+        posz.timeToInitState() == 353620566035124.int
