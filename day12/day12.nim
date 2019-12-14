@@ -22,10 +22,13 @@ proc parseCoords(fileName: string): Coord3Arr =
 proc updatePosVel(posz: var Coord1Arr, velz: var Coord1Arr) =
   for i in 0 .. posz.high:
     for j in i+1 .. posz.high:
-      let
-        moonICloser = -cmp(posz[i], posz[j])
       # Update velocity.
-      velz[i].inc(moonICloser); velz[j].inc(-moonICloser)
+      if posz[i] < posz[j]:
+        velz[i].inc
+        velz[j].dec
+      elif posz[i] > posz[j]:
+        velz[i].dec
+        velz[j].inc
     # Update position.
     posz[i].inc(velz[i])
 
