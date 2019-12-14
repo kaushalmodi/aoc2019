@@ -97,7 +97,11 @@ proc timeToInitState(posz: var Coord3Arr): int =
       timeToInit[axis].inc
       if velBackToZero:
         break
-  result = 2*lcm(timeToInit) # Do an LCM of timeToInit for all axes
+  # Do an LCM of timeToInit for all axes
+  when (NimMajor, NimMinor, NimPatch) <= (1, 0, 99): # For Nim 1.0.x and older
+    result = 2*timeToInit[0].lcm(timeToInit[1]).lcm(timeToInit[2])
+  else:
+    result = 2*lcm(timeToInit)
 
 when isMainModule:
   import std/[unittest]
