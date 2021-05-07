@@ -29,6 +29,7 @@ install:
   - choosenim $CHANNEL
 
 script:
+  - nim -v
   - nim days
 
 notifications:
