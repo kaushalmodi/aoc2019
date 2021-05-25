@@ -15,7 +15,7 @@ matrix:
       compiler: gcc
 
     - os: linux
-      env: CHANNEL=devel
+      env: CHANNEL="devel --latest"
       compiler: gcc
 
 cache:
@@ -26,7 +26,7 @@ install:
   - curl https://nim-lang.org/choosenim/init.sh -sSf > init.sh
   - sh init.sh -y
   - export PATH=$HOME/.nimble/bin:$PATH
-  - choosenim $CHANNEL
+  - eval "choosenim $CHANNEL"
 
 script:
   - nim -v
