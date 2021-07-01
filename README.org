@@ -1,6 +1,6 @@
 #+title: Advent of Code 2019 in Nim
 
-[[https://travis-ci.org/kaushalmodi/aoc2019][https://travis-ci.org/kaushalmodi/aoc2019.svg?branch=master]]
+[[https://github.com/kaushalmodi/aoc2019/actions/workflows/test.yml][https://github.com/kaushalmodi/aoc2019/actions/workflows/test.yml/badge.svg]]
 
 * Run code for all days
 #+begin_example
